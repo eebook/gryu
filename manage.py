@@ -5,20 +5,20 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import os
 from flask_script import Manager
-from flask import Flask
+from flask_migrate import Migrate, MigrateCommand
 
+from api.common.models import db
+from api import create_app
 
-CONFIG = os.path.abspath("./local_config.py")
-
-# app = create_app(CONFIG)
-app = Flask(__name__)
+app = create_app(config_name='default')
 manager = Manager(app)
+migrate = Migrate(app, db)
+manager.add_command('db', MigrateCommand)
 
 
 @manager.command
-def hello():
+def test():
     print("test")
 
 
