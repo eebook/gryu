@@ -47,4 +47,3 @@ class User(db.Model):
 
     def verify_password(self, raw):
         return check_password_hash(self.password_hash, raw)
-

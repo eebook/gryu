@@ -5,7 +5,7 @@ MAINTAINER He Jun knarfeh@outlook.com
 RUN apk --update add --no-cache openssl ca-certificates postgresql-dev
 
 # build pkgs
-RUN apk --update add gcc g++ python3-dev musl-dev
+RUN apk --update add gcc g++ python3-dev musl-dev make
 
 # dev pkgs
 RUN apk add curl

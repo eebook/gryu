@@ -6,7 +6,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
-from flask import request
 from ..decorators import json
 from . import api
 
@@ -15,4 +14,3 @@ from . import api
 @json
 def test():
     return {}
-

@@ -4,7 +4,6 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from flask_migrate import Migrate
 from flask import Flask
 from .models.models import db
 from config import config

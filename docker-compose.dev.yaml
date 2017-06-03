@@ -5,9 +5,9 @@ services:
     build:
       context: .
       dockerfile: ./dockerfiles/dev/Dockerfile
-    entrypoint: [python, manage.py]
-    command: [runserver, '--host', '0.0.0.0'] 
-    # entrypoint: [sh]
+    # entrypoint: [python, manage.py]
+    # command: [runserver, '--host', '0.0.0.0'] 
+    entrypoint: [sh]
     volumes:
       - .:/src
     depends_on:

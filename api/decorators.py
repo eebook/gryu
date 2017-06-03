@@ -1,7 +1,6 @@
 import functools
 
-import hashlib
-from flask import jsonify, request, url_for, current_app, make_response, g
+from flask import jsonify
 
 
 def json(f):
