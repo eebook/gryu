@@ -19,7 +19,6 @@ class Config:
                                   'hostname': DB_HOST,
                                   'database': DB_NAME
                               })
-    print("SQLLCHEMY???{}".format(SQLALCHEMY_DATABASE_URI))
 
     @staticmethod
     def init_app(app):

@@ -8,7 +8,7 @@ from __future__ import unicode_literals
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
 
-from api.common.models import db
+from api.models.models import db
 from api import create_app
 
 app = create_app(config_name='default')

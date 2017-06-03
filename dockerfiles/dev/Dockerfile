@@ -12,6 +12,6 @@ RUN apk add curl
 
 COPY requirements /requirements
 RUN pip3 install -U pip \
-    && pip install -r requirements/dev.txt
+    && pip install -i https://pypi.douban.com/simple -r requirements/dev.txt
 
 WORKDIR /src

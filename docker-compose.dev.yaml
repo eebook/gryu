@@ -6,11 +6,13 @@ services:
       context: .
       dockerfile: ./dockerfiles/dev/Dockerfile
     entrypoint: [python, manage.py]
-    command: [runserver] 
+    command: [runserver, '--host', '0.0.0.0'] 
+    # entrypoint: [sh]
     volumes:
       - .:/src
     depends_on:
       - db
+    tty: true
     ports:
       - "$EEBOOK_API_WEB_PORT:5000"
     env_file:
