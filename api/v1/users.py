@@ -6,7 +6,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
-from ..decorators import json
+from ..libs.decorators import json
 from . import api
 
 
@@ -14,3 +14,9 @@ from . import api
 @json
 def test():
     return {}
+
+@api.route("/auth/register", methods=["GET"])
+def auth_register():
+    return {}
+
+# @api.route("/auth/exist", methods=["get"])

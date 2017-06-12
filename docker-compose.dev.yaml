@@ -19,6 +19,10 @@ services:
       - envs/local.env
     environment:
       - ENV="development"
+  api-editor:
+    image: swaggerapi/swagger-editor
+    ports:
+      - "$EEBOOK_API_EDITOR:8080"
   db:
     image: $POSTGRES_IMAGE
     ports:
