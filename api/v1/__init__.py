@@ -14,6 +14,14 @@ api = Blueprint("api", __name__)
 def ping():
     return {}
 
+@api.route("/about", methods=["GET"])
+@json
+def about():
+    return {
+        "title": "Why ee-book.org exsits",
+        "content": "TODO",
+    }
+
 
 # do this last to avoid circular dependencies
 from . import users    # noqa

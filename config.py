@@ -19,6 +19,7 @@ class Config:
                                   'hostname': DB_HOST,
                                   'database': DB_NAME
                               })
+    SQLALCHEMY_TRACK_MODIFICATIONS = True
 
     @staticmethod
     def init_app(app):
