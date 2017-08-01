@@ -5,12 +5,16 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from flask import Flask
+from flask_wtf.csrf import CSRFProtect
+
 from .models.models import db
 from config import config
 
 
 def create_app(config_name='default'):
     app = Flask(__name__)
+    csrf = CSRFProtect()
+    csrf.init_app(app)
 
     # load default configuration
     app.config.from_object(config[config_name])

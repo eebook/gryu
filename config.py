@@ -20,6 +20,10 @@ class Config:
                                   'database': DB_NAME
                               })
     SQLALCHEMY_TRACK_MODIFICATIONS = True
+    # TODO: Remove it
+    SECRET_KEY = 'alalalala'
+    WTF_CSRF_SECRET_KEY = 'alasdf'
+    WTF_CSRF_CHECK_DEFAULT = False
 
     @staticmethod
     def init_app(app):

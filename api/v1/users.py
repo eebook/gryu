@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-from __future__ import print_function
 from __future__ import unicode_literals
+
+from flask import request
 
 from ..libs.decorators import json
 from . import api
+from ..serializer.users import RegisterForm
 
 
 @api.route("/auth/register", methods=["POST"])
@@ -15,6 +17,10 @@ def user_register():
     """
     Register a new user.
     """
+    print("request data???" + str(request.data))
+    form = RegisterForm().create_api_form()
+    user = form.create_user()
+
     return {
         "TODO": "user registration"
     }
@@ -29,6 +35,7 @@ def check_mobile_exist():
     return {
         "TODO": "check, check mobile phone"
     }
+
 
 @api.route("/auth/exist", methods=["GET"])
 @json
@@ -49,4 +56,23 @@ def get_user_profile():
     """
     return {
         "TODO": "auth profile"
+    }
+
+
+@api.route("/auth/activate/activate_key", methods=["put"])
+def activate():
+    """
+    Activate user's email
+    """
+    return {
+        "TODO": "activate"
+    }
+
+
+@api.route("/auth/generate-api-token", methods=["POST"])
+def generate_api_token():
+    """
+    """
+    return {
+        "TODO": "API token"
     }

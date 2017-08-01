@@ -16,7 +16,6 @@ def json(f):
         if not isinstance(rv, dict):
             rv = rv.to_json()
         rv = jsonify(rv)
-        print("rv???{}".format(rv))
         if status_or_headers is not None:
             rv.status_code = status_or_headers
         if headers is not None:
