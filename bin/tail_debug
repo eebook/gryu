@@ -1,0 +1,1 @@
+docker exec -it api_api_1 tail -f /var/log/eebook/eebookorg.debug.log

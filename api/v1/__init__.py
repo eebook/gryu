@@ -4,6 +4,9 @@
 from flask import Blueprint
 from ..libs.decorators import json
 
+import logging
+logger = logging.getLogger(__name__)
+
 __author__ = 'knarfeh@outlook.com'
 
 api = Blueprint("api", __name__)
