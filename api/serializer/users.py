@@ -10,9 +10,11 @@ from wtforms.fields import (StringField, PasswordField, TextAreaField, IntegerFi
 from wtforms.validators import (DataRequired, Optional, Email, URL, Length, Regexp, StopValidation)
 from werkzeug.datastructures import MultiDict
 # TODO, serializer can return errors like django-rest-framework
+
 from api.models.models import User
 from .base import Form
 from ..models import db
+from .exceptions import UserException
 
 
 class UserForm(Form):
@@ -46,7 +48,7 @@ class LoginForm(PasswordForm):
 
 
 class EmailForm(Form):
-    email = StringField(validators=[DataRequired])
+    email = StringField(validators=[DataRequired()])
 
 
 class RegisterForm(UserForm, EmailForm):
@@ -54,8 +56,12 @@ class RegisterForm(UserForm, EmailForm):
         # TODO: raise StopValidation if user already exist
         pass
 
+    def validate_email(self, field):
+        if User.query.filter_by(email='knarfeh@outlook.com').first():
+            print("FUCK!!!!")
+            raise UserException('email_already_exist')
+
     def create_user(self):
-        print("create_user, WTF???")
         user = User(
             username=self.username.data,
             email=self.email.data

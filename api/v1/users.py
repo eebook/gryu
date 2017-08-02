@@ -4,11 +4,14 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import logging
 from flask import request
 
 from ..libs.decorators import json
 from . import api
 from ..serializer.users import RegisterForm
+
+logger = logging.getLogger(__name__)
 
 
 @api.route("/auth/register", methods=["POST"])
@@ -17,8 +20,9 @@ def user_register():
     """
     Register a new user.
     """
-    print("request data???" + str(request.data))
     form = RegisterForm().create_api_form()
+    show_message = form.validate_on_submit()
+    # logger.debug("WTF is show_message: " + show_message)
     user = form.create_user()
 
     return {

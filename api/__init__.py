@@ -11,10 +11,12 @@ from flask_logconfig import LogConfig
 
 from .models.models import db
 from config import config
+from .middleware import TestMiddleware
 
 
 def create_app(config_name='default'):
     app = Flask(__name__)
+    app.wsgi_app = TestMiddleware(app.wsgi_app)
 
     # TODO: Do you understand?
     csrf = CSRFProtect()

@@ -13,13 +13,13 @@ api = Blueprint("api", __name__)
 
 
 @api.route("/ping", methods=["GET"])
-@json
 def ping():
-    return {}
+    return "pong"
 
 @api.route("/about", methods=["GET"])
 @json
 def about():
+    logger.error("sdfasdfsd")
     return {
         "title": "Why ee-book.org exsits",
         "content": "TODO",

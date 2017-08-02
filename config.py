@@ -3,69 +3,9 @@
 
 import os
 
+from api.libs.common import get_log_config
+
 class Config:
-    # Can be moved to a common package, Temporarily did not add a colored log
-    def get_log_config(component, handlers, level='DEBUG', path='/var/log/eebook'):
-        """Return a log config."""
-        config = {
-            'version': 1,
-            'disable_existing_loggers': False,
-            'formatters': {
-                'standard': {
-                    'format': '%(asctime)s [%(levelname)s][%(threadName)s]' +
-                            '[%(name)s.%(funcName)s():%(lineno)d] %(message)s'
-                },
-            },
-            'handlers': {
-                'debug': {
-                    'level': 'DEBUG',
-                    'class': 'logging.handlers.RotatingFileHandler',
-                    'filename': path + component + '.debug.log',
-                    'maxBytes': 1024 * 1024 * 1024,
-                    'backupCount': 5,
-                    'formatter': 'standard',
-                },
-                'info': {
-                    'level': 'INFO',
-                    'class': 'logging.handlers.RotatingFileHandler',
-                    'filename': path + component + '.info.log',
-                    'maxBytes': 1024 * 1024 * 1024,
-                    'backupCount': 5,
-                    'formatter': 'standard',
-                },
-                'error': {
-                    'level': 'ERROR',
-                    'class': 'logging.handlers.RotatingFileHandler',
-                    'filename': path + component + '.error.log',
-                    'maxBytes': 1024 * 1024 * 100,
-                    'backupCount': 5,
-                    'formatter': 'standard',
-                },
-                'console': {
-                    'level': level,
-                    'class': 'logging.StreamHandler',
-                    'formatter': 'standard'
-                },
-            },
-            'loggers': {
-                'django': {
-                    'handlers': handlers,
-                    'level': 'INFO',
-                    'propagate': False
-                },
-                'django.request': {
-                    'handlers': handlers,
-                    'level': 'INFO',
-                    'propagate': False,
-                },
-                '': {
-                    'handlers': handlers,
-                    'level': level,
-                    'propagate': False
-                },
-            }
-        }
-        return config
     LOG_HANDLER = os.getenv('LOG_HANDLER', 'debug,info,error').split(',')
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'DEBUG')
     LOG_PATH = os.getenv('LOG_PATH', '/var/log/eebook/')
