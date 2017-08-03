@@ -1,7 +1,7 @@
-from ..libs.exceptions import EEBookAPIException
+from ..common.exceptions import APIException
 
 
-class UserException(EEBookAPIException):
+class UserException(APIException):
 
     errors_map = {
         'user_not_exist': {
@@ -40,30 +40,3 @@ class UserException(EEBookAPIException):
         },
     }
 
-
-class OSSAuthException(EEBookAPIException):
-
-    errors_map = {
-        'signature_expired': {
-            'message': ('The signature you provided is expired. Signature will expires in 3 hours '
-                        'since it is created.'),
-            'type': 'forbidden'
-        },
-        'signature_not_match': {
-            'message': ('The request signature we calculated does not match the signature you '
-                        'provided. Check your key and signing method.'),
-            'type': 'forbidden'
-        },
-        'token_not_exist': {
-            'message': 'The token provided does not exist',
-            'type': 'forbidden'
-        },
-        'username_not_exist': {
-            'message': 'The username provided in the signed url does not exist',
-            'type': 'forbidden'
-        },
-        'bucket_not_allowed': {
-            'message': 'The current user is not allowed to operate the requested bucket',
-            'type': 'forbidden'
-        }
-    }

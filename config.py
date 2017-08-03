@@ -3,7 +3,7 @@
 
 import os
 
-from api.libs.common import get_log_config
+from api.common.utils import get_log_config
 
 class Config:
     LOG_HANDLER = os.getenv('LOG_HANDLER', 'debug,info,error').split(',')
@@ -50,9 +50,7 @@ class ProductionConfig(Config):
 
 
 config = {
-    "development": DevelopmentConfig,
-    "testing": TestingConfig,
-    "production": ProductionConfig,
-
-    "default": DevelopmentConfig
+    "dev": DevelopmentConfig,
+    "test": TestingConfig,
+    "prod": ProductionConfig,
 }

@@ -7,30 +7,23 @@ from __future__ import unicode_literals
 import logging
 from flask import request
 
-from ..libs.decorators import json
-from . import api
-from ..serializer.users import RegisterForm
+from ..common.utils import json
+from . import auth_bp
+from . import domain
 
 logger = logging.getLogger(__name__)
 
 
-@api.route("/auth/register", methods=["POST"])
+@auth_bp.route("/register", methods=["POST"])
 @json
 def user_register():
     """
     Register a new user.
     """
-    form = RegisterForm().create_api_form()
-    show_message = form.validate_on_submit()
-    # logger.debug("WTF is show_message: " + show_message)
-    user = form.create_user()
+    logger.debug("user register, request.json???{}".format(request.json))
+    return domain.create_user(request.json)
 
-    return {
-        "TODO": "user registration"
-    }
-
-
-@api.route("/auth/mobile/exist", methods=["GET"])
+@auth_bp.route("/mobile/exist", methods=["GET"])
 @json
 def check_mobile_exist():
     """
@@ -41,7 +34,7 @@ def check_mobile_exist():
     }
 
 
-@api.route("/auth/exist", methods=["GET"])
+@auth_bp.route("/exist", methods=["GET"])
 @json
 def check_user_exist():
     """
@@ -52,7 +45,7 @@ def check_user_exist():
     }
 
 
-@api.route("/auth/profile", methods=["GET", "POST"])
+@auth_bp.route("/profile", methods=["GET", "POST"])
 @json
 def get_user_profile():
     """
@@ -63,7 +56,7 @@ def get_user_profile():
     }
 
 
-@api.route("/auth/activate/activate_key", methods=["put"])
+@auth_bp.route("/activate/activate_key", methods=["put"])
 def activate():
     """
     Activate user's email
@@ -73,7 +66,7 @@ def activate():
     }
 
 
-@api.route("/auth/generate-api-token", methods=["POST"])
+@auth_bp.route("/generate-api-token", methods=["POST"])
 def generate_api_token():
     """
     """

@@ -4,19 +4,15 @@
 
 import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import Column
-from sqlalchemy import String, DateTime, Boolean
-from sqlalchemy import Integer
+from sqlalchemy import Column, String, DateTime, Boolean, Integer
 
-from .base import db
+from ..common.database import BaseModel
 
 
-__all__ = ["User"]
+__all__ = ["Users"]
 
 
-class User(db.Model):
-    __tablename__ = 'users'
-
+class Users(BaseModel):
     id = Column(Integer, primary_key=True)
     username = Column(String(24), unique=True)
     email = Column(String(254), unique=True)

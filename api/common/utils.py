@@ -1,6 +1,48 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+
+import functools
+from flask import jsonify
+import six
+
+
+def merge_dicts(*dict_args):
+    """
+    Given any number of dict, shallow copy and merge into a new dict,
+    precedence goes to key value pairs in latter dicts
+    """
+    result = {}
+    for dictionary in dict_args:
+        result.update(dictionary)
+    return result
+
+
+def is_string(text):
+    """
+    :param text: input content
+    check if the text is string type, return True if it is, else return False.
+    """
+    if six.PY2:
+        return isinstance(text, basestring)
+    else:
+        return isinstance(text, (str, bytes))
+
+
+def convert_to_unicode(text):
+    """
+    :param text: input content
+    If text is utf8 encoded, then decode it with utf8 and return it, else just return it.
+    """
+    assert is_string(text), 'text must be string types.'
+
+    try:
+        return text.decode('utf-8')
+    except UnicodeEncodeError:  # python2 will raise this exception when decode unicode.
+        return text
+    except AttributeError:  # python3 will raise this exception when decode unicode.
+        return text
 
 # Can be moved to a common package, Temporarily did not add a colored log
 def get_log_config(component, handlers, level='DEBUG', path='/var/log/eebook'):
@@ -67,3 +109,24 @@ def get_log_config(component, handlers, level='DEBUG', path='/var/log/eebook'):
         }
     }
     return config
+
+
+def json(f):
+    @functools.wraps(f)
+    def wrapped(*args, **kwargs):
+        rv = f(*args, **kwargs)
+        status_or_headers = None
+        headers = None
+        if isinstance(rv, tuple):
+            rv, status_or_headers, headers = rv + (None,) * (3 - len(rv))
+        if isinstance(status_or_headers, (dict, list)):
+            headers, status_or_headers = status_or_headers, None
+        if not isinstance(rv, dict):
+            rv = rv.to_json()
+        rv = jsonify(rv)
+        if status_or_headers is not None:
+            rv.status_code = status_or_headers
+        if headers is not None:
+            rv.headers.extend(headers)
+        return rv
+    return wrapped

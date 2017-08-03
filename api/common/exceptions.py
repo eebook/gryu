@@ -1,46 +1,49 @@
-# _*_ coding:utf-8 _*_
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
 
-import collections
-import json
-import logging
 import os
+import logging
+import json
+import collections
+from werkzeug.exceptions import Conflict, NotFound, Unauthorized
 
 from . import status
 from .utils import convert_to_unicode as u
 from .utils import is_string, merge_dicts
 
+SOURCE = os.getenv('SOURCE', '1000')
+DEFAULT_CODE = 'unknown_issue'
+DEFAULT_MESSAGE = 'Unknown issue was caught and message was not specified'
+DEFAULT_ERROR_TYPE = 'server_error'
 logger = logging.getLogger(__name__)
 
-DEFAULT_MESSAGE = 'Unknown issue was caught and message was not specified.'
-DEFAULT_TYPE = 'bad_request'
-
-COMMON_ERRORS_MAP = {
+MAP_COMMON_ERRORS_MESSAGES = {
     'invalid_args': {
-        'message': 'Invalid parameters were passed.'
+        'message': 'Invalid parameters were passed'
     },
     'unknown_issue': {
         'message': DEFAULT_MESSAGE,
         'type': 'server_error'
     },
     'permission_denied': {
-        'message': 'Current user has no permission to perform the action.',
+        'message': 'Current user has no permission to perform the action',
         'type': 'forbidden'
     },
     'resource_not_exist': {
-        'message': 'The requested resource does not exist.',
+        'message': 'The requested resource was not found on the server',
         'type': 'not_found'
     },
     'resource_state_conflict': {
-        'message': 'State of the requested resource is conflict.',
+        'message': 'State of the requested resource is conflict',
         'type': 'conflict'
     }
 }
 
 # reference:
 # https://devcenter.heroku.com/articles/platform-api-reference#error-responses
-ERROR_TYPES_MAP = {
+MAP_ERROR_TYPES_STATUS_CODE = {
     'bad_request': {
         'status_code': status.HTTP_400_BAD_REQUEST
     },
@@ -89,18 +92,16 @@ ERROR_TYPES_MAP = {
 }
 
 
-class EEBookBaseAPIException(Exception):
-
-    source = os.getenv('SOURCE', 'None')
-    code = 'unknown_issue'
+class JSONException(Exception):
+    source = SOURCE
+    code = DEFAULT_CODE
     message = DEFAULT_MESSAGE
-    error_type = 'server_error'
+    error_type = DEFAULT_ERROR_TYPE
 
     class Meta:
         abstract = True
 
-    @property
-    def data(self):
+    def to_dict(self):
         data = {
             'code': self.code,
             'source': self.source,
@@ -111,38 +112,31 @@ class EEBookBaseAPIException(Exception):
         return data
 
     def __str__(self):
+        """
+        :return: Json encoded string
+        """
         return json.dumps(self.data)
 
 
-class EEBookAPIException(EEBookBaseAPIException):
-
+class APIException(JSONException):
     errors_map = {}
 
     def __init__(self, code, message=None, message_params=None):
-
-        errors_map = merge_dicts(self.errors_map, COMMON_ERRORS_MAP)
+        errors_map = merge_dicts(self.errors_map, MAP_COMMON_ERRORS_MESSAGES)
         assert code in errors_map, (
-            'error code {} was not found in errors map'.format(code)
+            'error code {} was not found in errors_map'.format(code)
         )
-
         self.code = code
         self._error = errors_map[code]
         self._message = message
         self._message_params = message_params
 
-    def __str__(self):
-        return self.message
-
-    @property
-    def error_type(self):
-        return self._error.get('type', DEFAULT_TYPE)
-
     @property
     def message(self):
         if self._message:
             return self._message
+
         message = self._error.get('message', DEFAULT_MESSAGE)
-        message = u(message)
         if not self._message_params:
             return message
         elif is_string(self._message_params):
@@ -151,25 +145,31 @@ class EEBookAPIException(EEBookBaseAPIException):
             return message.format(**self._message_params)
         elif isinstance(self._message_params, collections.Iterable):
             return message.format(*self._message_params)
+
         return message.format(self._message_params)
+
+    @property
+    def error_type(self):
+        return self._error.get('type', DEFAULT_ERROR_TYPE)
 
     @property
     def status_code(self):
         try:
-            return ERROR_TYPES_MAP[self.error_type]['status_code']
+            return MAP_ERROR_TYPES_STATUS_CODE[self.error_type]['status_code']
         except KeyError:
-            logger.warning('Error type {} was not found in ERROR_TYPES_MAP.'
-                        .format(u(self.error_type)))
-            return ERROR_TYPES_MAP[DEFAULT_TYPE]['status_code']
+            logger.warning("Error type {} was not found in MAP_ERROR_TYPES_STATUS_CODE".format(u(self.error_type)))
+            return MAP_ERROR_TYPES_STATUS_CODE[DEFAULT_ERROR_TYPE]['status_code']
+
+    def __str__(self):
+        return self.message
 
 
-class EEBookFieldValidateFailed(EEBookAPIException):
+class FieldValidateFaield(APIException):
 
     def __init__(self, fields, message=None, message_params=(), code='invalid_args'):
-        assert (
-            isinstance(fields, collections.Iterable) or
-            isinstance(fields, collections.Mapping)
-        ), 'fields must be a list or dictionary like object.'
+        assert isinstance(fields, (collections.Iterable, collections.Mapping)),\
+            'fields must be a list or dict like object'
+
         if isinstance(fields, collections.Mapping):
             fields = [fields]
         try:
@@ -180,11 +180,10 @@ class EEBookFieldValidateFailed(EEBookAPIException):
 
         self.code = code
         self.fields = fields
-        super(MekFieldValidateFailed, self).__init__(self.code, message=message,
-                                                     message_params=message_params)
+        super(FieldValidateFaield, self).__init__(self.code, message=message, message_params=message_params)
 
     @property
-    def data(self):
-        data = super(MekFieldValidateFailed, self).data
+    def to_json(self):
+        data = super(FieldValidateFaield, self).to_json
         data['fields'] = self.fields
         return data

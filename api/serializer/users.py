@@ -58,7 +58,6 @@ class RegisterForm(UserForm, EmailForm):
 
     def validate_email(self, field):
         if User.query.filter_by(email='knarfeh@outlook.com').first():
-            print("FUCK!!!!")
             raise UserException('email_already_exist')
 
     def create_user(self):

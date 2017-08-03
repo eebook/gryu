@@ -4,7 +4,9 @@
 
 ## DB
 
-create database eebook
+`create database eebook`
+
+TODO: use python
     
 ```
 python manage.py db migrate
