@@ -8,41 +8,32 @@ import logging
 from flask import request
 
 from ..common.utils import json
+from ..common.validation import schema
 from . import auth_bp
 from . import domain
 
 logger = logging.getLogger(__name__)
 
 
-@auth_bp.route("/register", methods=["POST"])
+@auth_bp.route("/register", methods=["POST"])  # Dont allow GET method access should return 405 error
 @json
-def user_register():
+@schema('register_user.json')
+def register_user():
     """
     Register a new user.
     """
-    logger.debug("user register, request.json???{}".format(request.json))
     return domain.create_user(request.json)
-
-@auth_bp.route("/mobile/exist", methods=["GET"])
-@json
-def check_mobile_exist():
-    """
-    Check if the phone number already exists.
-    """
-    return {
-        "TODO": "check, check mobile phone"
-    }
 
 
 @auth_bp.route("/exist", methods=["GET"])
-@json
 def check_user_exist():
     """
     Check whether the user already exsits.
     """
-    return {
-        "TODO": "check, check, check"
-    }
+    logger.debug("request dir???{}".format(dir(request)))
+    logger.debug("request query_string: {}".format(request.query_string))
+    logger.debug("request args: {}".format(request.args))
+    return domain.check_user_exist(request.args)
 
 
 @auth_bp.route("/profile", methods=["GET", "POST"])

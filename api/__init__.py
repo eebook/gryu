@@ -4,8 +4,9 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-
-from flask import Flask, Blueprint
+import logging
+import os
+from flask import Flask, Blueprint, request
 from flask_wtf.csrf import CSRFProtect
 from flask_logconfig import LogConfig
 
@@ -14,28 +15,45 @@ from .middleware import TestMiddleware
 from .common.utils import json
 from .common.database import init_db
 from .common.middleware import response
-
+from .common.exceptions import APIException
+from .common.database import db_session
 
 BP_NAME = 'root'
-root = Blueprint(BP_NAME, __name__)
+API_TOKEN_HEADERS = 'API_TOKEN'
+root_bp = Blueprint(BP_NAME, __name__)
+logger = logging.getLogger(__name__)
 
-@root.route("/ping", methods=["GET"])
+
+@root_bp.route("/ping", methods=["GET"])
 def ping():
     return "pong"
 
-@root.route("/about", methods=["GET"])
+
+@root_bp.route("/about", methods=["GET"])
 @json
 def about():
-    logger.error("sdfasdfsd")
     return {
-        "title": "Why ee-book.org exsits",
-        "content": "TODO",
+        "title": "Why ee-book.org exist",
+        "content": "TODO: about content",
     }
 
 
-def create_app(config_name='default'):
+def create_app(config_name='dev'):
     app = Flask(__name__)
     app.wsgi_app = TestMiddleware(app.wsgi_app)
+
+    @app.before_request
+    def ensure_content_type():
+        content_type = request.headers.get('Content-type')
+        if not content_type == 'application/json':
+            raise APIException('invalid_content_type')
+        # TODO: Add API_TOKEN_HEADERS
+        if not request.headers.get(API_TOKEN_HEADERS, '') == os.environ.get('SECURE_API_KEY', ''):
+            raise APIException('permission_denied')
+
+    # @app.teardown_appcontext
+    # def shutdown_session(exception=None):
+    #     db_session.remove()
 
     # TODO: Do you understand?
     csrf = CSRFProtect()
@@ -48,7 +66,7 @@ def create_app(config_name='default'):
     logcfg.init_app(app)
 
     from .users import auth_bp as auth_bp
-    app.register_blueprint(root, url_prefix='/v1')
+    app.register_blueprint(root_bp, url_prefix='/v1')
     app.register_blueprint(auth_bp, url_prefix='/v1/auth')
 
     app.response_class = response.JSONResponse

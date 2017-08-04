@@ -5,7 +5,6 @@ import os
 import logging
 
 from sqlalchemy import create_engine
-from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy_utils import database_exists, create_database, drop_database
@@ -24,6 +23,7 @@ db_session = scoped_session(sessionmaker(autocommit=True,
                                          bind=engine))
 
 logger = logging.getLogger(__name__)
+
 
 class CustomBase(object):
     """This overrides the default
@@ -84,7 +84,6 @@ class CustomBase(object):
             logger.error('%r' % e)
             if current_app.config['DEBUG']:
                 raise e
-
 
 
 BaseModel = declarative_base(cls=CustomBase, constructor=None)

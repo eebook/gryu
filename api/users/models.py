@@ -7,14 +7,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import Column, String, DateTime, Boolean, Integer
 
 from ..common.database import BaseModel
+from ..common.serializers import ModelSerializerMixin
 
 
 __all__ = ["Users"]
 
 
-class Users(BaseModel):
+class Users(BaseModel, ModelSerializerMixin):
     id = Column(Integer, primary_key=True)
-    username = Column(String(24), unique=True)
+    username = Column(String(24), unique=True)  # TODO: db_index?
     email = Column(String(254), unique=True)
     _password = Column('password', String(100))
     is_active = Column(Boolean, default=False)

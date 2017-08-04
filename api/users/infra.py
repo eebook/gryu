@@ -14,6 +14,6 @@ def create_user(user):
         user.save()
     except Exception:
         # just for test
-        raise UserException(code='email_already_exist')
+        raise UserException(code='unknown_issue')
 
     return user

@@ -1,7 +1,7 @@
 import json
-from functools import singledispatch
+from functools import singledispatch     # Only Python3 has this library
 
-from flask import jsonify, Response, request
+from flask import jsonify, Response
 from werkzeug.exceptions import NotFound
 
 from ..exceptions import JSONException, APIException
@@ -66,7 +66,6 @@ def json_error_handler(app):
         response = jsonify(error.to_dict())
         response.status_code = error.status_code
         return response
-
 
     @app.errorhandler(NotFound.code)
     def resource_not_found(error):

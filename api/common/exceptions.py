@@ -28,7 +28,7 @@ MAP_COMMON_ERRORS_MESSAGES = {
         'type': 'server_error'
     },
     'permission_denied': {
-        'message': 'Current user has no permission to perform the action',
+        'message': 'You don\'t have enough permission to perform this action',
         'type': 'forbidden'
     },
     'resource_not_exist': {
@@ -38,6 +38,14 @@ MAP_COMMON_ERRORS_MESSAGES = {
     'resource_state_conflict': {
         'message': 'State of the requested resource is conflict',
         'type': 'conflict'
+    },
+    'invalid_content_type': {
+        'message': 'Invalid content-type. Only `application-json` is allowed.',
+        'type': 'bad_request'
+    },
+    'invalid_request': {
+        'message': 'Not verified by json schema, errors: {}',
+        'type': 'bad_request'
     }
 }
 
@@ -115,7 +123,7 @@ class JSONException(Exception):
         """
         :return: Json encoded string
         """
-        return json.dumps(self.data)
+        return json.dumps(self.to_dict())
 
 
 class APIException(JSONException):
@@ -182,8 +190,7 @@ class FieldValidateFaield(APIException):
         self.fields = fields
         super(FieldValidateFaield, self).__init__(self.code, message=message, message_params=message_params)
 
-    @property
-    def to_json(self):
-        data = super(FieldValidateFaield, self).to_json
+    def to_dict(self):
+        data = super(FieldValidateFaield, self).to_dict()
         data['fields'] = self.fields
         return data

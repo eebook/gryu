@@ -44,6 +44,7 @@ def convert_to_unicode(text):
     except AttributeError:  # python3 will raise this exception when decode unicode.
         return text
 
+
 # Can be moved to a common package, Temporarily did not add a colored log
 def get_log_config(component, handlers, level='DEBUG', path='/var/log/eebook'):
     """
@@ -105,7 +106,7 @@ def get_log_config(component, handlers, level='DEBUG', path='/var/log/eebook'):
                 'handlers': ['debug', 'info', 'error'],
                 'level': level,
                 'propagate': False
-            },
+            }
         }
     }
     return config
