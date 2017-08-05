@@ -9,6 +9,7 @@ from flask import request
 
 from ..common.utils import json
 from ..common.validation import schema
+from ..common import status
 from . import auth_bp
 from . import domain
 
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 @schema('register_user.json')
 def register_user():
     """
-    Register a new user.
+    Register a new user
     """
     return domain.create_user(request.json)
 
@@ -28,11 +29,8 @@ def register_user():
 @auth_bp.route("/exist", methods=["GET"])
 def check_user_exist():
     """
-    Check whether the user already exsits.
+    Check whether the user already exsits
     """
-    logger.debug("request dir???{}".format(dir(request)))
-    logger.debug("request query_string: {}".format(request.query_string))
-    logger.debug("request args: {}".format(request.args))
     return domain.check_user_exist(request.args)
 
 
@@ -47,19 +45,19 @@ def get_user_profile():
     }
 
 
-@auth_bp.route("/activate/activate_key", methods=["put"])
-def activate():
+@auth_bp.route("/activate/<activation_key>", methods=["put"])
+def activate(activation_key):
     """
-    Activate user's email
+    Activate user via uuid
     """
-    return {
-        "TODO": "activate"
-    }
+    domain.activate_user(activation_key)
+    return '', status.HTTP_204_NO_CONTENT
 
 
 @auth_bp.route("/generate-api-token", methods=["POST"])
 def generate_api_token():
     """
+    Generate api token
     """
     return {
         "TODO": "API token"

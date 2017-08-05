@@ -8,5 +8,5 @@ WTForms==2.1
 flask-wtf==0.14.2
 Flask-LogConfig==0.4.2
 sqlalchemy-utils==0.32.14
-jsonschame==2.6.0
+jsonschema==2.6.0
 

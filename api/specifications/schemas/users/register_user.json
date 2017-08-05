@@ -17,10 +17,6 @@
             "type": "string",
             "format": "email",
             "minLength": 3
-        },
-        "username": {
-            "type": "string",
-            "minLength": 2
         }
     }
 }
