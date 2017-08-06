@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
 import base64
 import itertools
@@ -16,13 +19,13 @@ class XORCipher(object):
         self.secret_key = secret_key
 
     def _xor_text(self, text):
-        return ''.join(chr(ord(x) ^ ord(y)) for (x, y) in zip(text, cycle(self.secret_key)))
+        return ''.join(chr(ord(x) ^ ord(y)) for (x, y) in zip(text.decode(), cycle(self.secret_key)))
 
     def encrypt(self, text):
-        return base64.encodestring(self._xor_text(text)).strip()
+        return base64.encodestring(self._xor_text(text).encode()).strip()
 
     def decrypt(self, text):
-        return self._xor_text(base64.decodestring(text))
+        return self._xor_text(base64.decodestring(text.encode()))
 
 
 class EEBookCipher(XORCipher):
@@ -36,7 +39,7 @@ class EEBookCipher(XORCipher):
         return bool(isinstance(value, string_types) and value.startswith(self.PREFIX))
 
     def encrypt(self, value):
-        return self.PREFIX + super(EEBookCipher, self).encrypt(value)
+        return self.PREFIX + super(EEBookCipher, self).encrypt(value).decode()
 
     def decrypt(self, value):
         assert self.is_encrypted_text(value), ('{} can not be decrypted by EEBookCipher, '

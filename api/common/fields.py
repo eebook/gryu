@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+
 from sqlalchemy import String
 from sqlalchemy.types import TypeDecorator
 
@@ -9,10 +13,12 @@ class EncryptedCharField(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
-        return bytes(EEBookCipher().encrypt(value))
-        # return "encrypted: " + value
+        result = EEBookCipher().encrypt(value)
+        print("type???{}".format(type(result)))
+        # return EEBookCipher().encrypt(value).encode()
+        return result
 
     def process_result_value(self, value, dialect):
-        return EEBookCipher().safy_decrypt(value)
+        return EEBookCipher().safe_decrypt(value)
         # return value + ":decrypted"
 
