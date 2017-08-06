@@ -7,10 +7,25 @@ from . import infra
 from ..common.exceptions import FieldValidateFaield
 from ..common import status
 from sqlalchemy import or_
-from .models import Users, ActivationKeys
+from .models import Users, ActivationKeys, EncryptedTokens
 from .exceptions import UserException
 
 logger = logging.getLogger(__name__)
+
+
+def _retrieve_user(_username, _email):
+    logger.debug("Retrieving user with account {}/{}".format(_username, _email))
+    if _username is None and _email is None:
+        raise FieldValidateFaield(["Username or email is required"])
+    if _username is not None:
+        user = Users.query.filter_by(username=_username).first()
+        if not user:
+            raise UserException('user_not_exist', message_params=_username)
+    if _email is not None:
+        user = Users.query.filter_by(email=_email).first()
+        if not user:
+            raise UserException('user_not_exist', message_params=_email)
+    return user
 
 
 def create_user(user):
@@ -37,19 +52,6 @@ def create_user(user):
 
 
 def check_user_exist(request_args):
-    def _retrieve_user(_username, _email):
-        logger.debug("Retrieving user with account {}/{}".format(_username, _email))
-        if not _username and not _email:
-            raise FieldValidateFaield(["Username or email is required"])
-        if _username is not None:
-            user = Users.query.filter_by(username=_username).first()
-            if not user:
-                raise UserException('user_not_exist', message_params=_username)
-            return
-        user = Users.query.filter_by(email=_email).first()
-        if not user:
-            raise UserException('user_not_exist', message_params=_username)
-
     username = request_args.get("username", None)
     email = request_args.get("email", None)
 
@@ -66,3 +68,31 @@ def activate_user(activate_key):
             key.delete()
     return '', status.HTTP_204_NO_CONTENT
 
+
+def generate_api_token(_user):
+    # Check out whether the user has been activated, TODO: use serializer
+    # TODO: active_tmp_password_users
+    username = _user.get('username', None)
+    email = _user.get('email', None)
+    password = _user.get('password', None)
+    logger.debug("WTF is username???{}, email???{}, password: {}".format(username, email, password))
+
+    user = _retrieve_user(_username=username, _email=email)
+    if user.verify_password(password):
+        logger.debug("WTF is user id???{}".format(user.id))
+        # token = EncryptedTokens.get_or_create(defaults=None, user_id=user.id)[0]
+        # token.delete()
+        # TODO: timed to let token expire
+        token = EncryptedTokens.get_or_create(defaults=None, user_id=user.id)[0]
+        logger.debug("token: {}".format(token))
+    else:
+        logger.debug("login failed, user: {}".format(user))
+        raise UserException('provided_credentials_not_correct')
+
+    result = {
+        'token': token.key,
+        'username': username,
+        'email': email
+    }
+
+    return result

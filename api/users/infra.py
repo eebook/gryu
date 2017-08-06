@@ -3,7 +3,7 @@
 
 import logging
 
-from .models import Users, ActivationKeys
+from .models import Users, ActivationKeys, EncryptedTokens
 from ..common.database import db
 from .exceptions import UserException
 

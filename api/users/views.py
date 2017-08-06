@@ -55,10 +55,10 @@ def activate(activation_key):
 
 
 @auth_bp.route("/generate-api-token", methods=["POST"])
+@json
+@schema('get_user_token.json')
 def generate_api_token():
     """
     Generate api token
     """
-    return {
-        "TODO": "API token"
-    }
+    return domain.generate_api_token(request.json)

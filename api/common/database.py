@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import logging
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.sql.expression import ClauseElement
 
 
 db = SQLAlchemy()
+logger = logging.getLogger(__name__)
 
 
 class BaseModel(db.Model):
@@ -21,14 +24,18 @@ class BaseModel(db.Model):
     """
     def save(self):
         db.session.add(self)
-        self._flush()
         db.session.commit()
+        self._flush()
         return self
 
     def delete(self):
-        db.session.delete(self)
+        print("WTF is self???{}".format(self))
+        num = db.session.delete(self)
+        print("delete num???{}".format(num))
         self._flush()
         db.session.commit()
+        self._flush()
+        print("delete???")
         return self
 
     """
@@ -41,3 +48,19 @@ class BaseModel(db.Model):
         # except DatabaseError:
         #     db.session.rollback()
         db.session.flush()
+
+    @classmethod
+    def get_or_create(cls, defaults=None, **kwargs):
+        logger.debug("cls: {}".format(cls.__dict__))
+        logger.debug("defaults??? {}, kwargs??? {}".format(defaults, kwargs))
+        instance = db.session.query(cls.__mapper__).filter_by(**kwargs).first()
+        if instance:
+            print("have instance, instance: {}".format(instance))
+            return instance, False
+        else:
+            params = dict((k, v) for k, v in kwargs.items() if not isinstance(v, ClauseElement))
+            params.update(defaults or {})
+            instance = cls(**params)
+            instance.save()
+            print("creating.....instance: {}".format(instance))
+            return instance, True

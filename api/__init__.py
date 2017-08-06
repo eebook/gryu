@@ -17,7 +17,7 @@ from .common.middleware import response
 from .common.exceptions import APIException
 from .common.database import db
 # Import models so that they are registered with SQLAlchemy
-from api.users.models import Users, ActivationKeys      # noqa
+from api.users.models import Users, ActivationKeys, EncryptedTokens      # noqa
 
 BP_NAME = 'root'
 API_TOKEN_HEADERS = 'API_TOKEN'
