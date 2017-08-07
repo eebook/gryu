@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+
 import logging
 
 from flask_sqlalchemy import SQLAlchemy
@@ -55,12 +57,12 @@ class BaseModel(db.Model):
         logger.debug("defaults??? {}, kwargs??? {}".format(defaults, kwargs))
         instance = db.session.query(cls.__mapper__).filter_by(**kwargs).first()
         if instance:
-            print("have instance, instance: {}".format(instance))
+            print("have instance, instance???: {}".format(instance))
             return instance, False
         else:
             params = dict((k, v) for k, v in kwargs.items() if not isinstance(v, ClauseElement))
             params.update(defaults or {})
             instance = cls(**params)
             instance.save()
-            print("creating.....instance: {}".format(instance))
+            print("creating.....instance???: {}".format(instance))
             return instance, True

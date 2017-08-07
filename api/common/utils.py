@@ -4,8 +4,25 @@
 from __future__ import unicode_literals
 
 import functools
+import logging
 from flask import jsonify
+from flask_httpauth import HTTPTokenAuth
 import six
+
+from .database import db
+
+
+token_auth = HTTPTokenAuth('Bearer')
+logger = logging.getLogger(__name__)
+
+
+@token_auth.verify_token
+def verify_token(token):
+    from ..users.models import EncryptedTokens
+    logger.debug("verify_token???, type of token: {}, token: {}".format(type(token), str(token)))
+    instance = db.session.query(EncryptedTokens).filter_by(key=str(token)).first()
+    logger.debug("token_obj???{}".format(instance))
+    return False
 
 
 def merge_dicts(*dict_args):
@@ -131,3 +148,4 @@ def json(f):
             rv.headers.extend(headers)
         return rv
     return wrapped
+

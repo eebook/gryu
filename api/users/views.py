@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 import logging
 from flask import request
 
-from ..common.utils import json
+from ..common.utils import json, token_auth
 from ..common.validation import schema
 from ..common import status
 from . import auth_bp
@@ -35,11 +35,13 @@ def check_user_exist():
 
 
 @auth_bp.route("/profile", methods=["GET", "POST"])
-@json
+@token_auth.login_required
 def get_user_profile():
     """
     Get the user's basic information
     """
+    logger.debug("request dir???{}".format(dir(request)))
+    logger.debug("request.authentication???{}".format(request.authorization))
     return {
         "TODO": "auth profile"
     }

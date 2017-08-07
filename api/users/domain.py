@@ -75,7 +75,6 @@ def generate_api_token(_user):
     username = _user.get('username', None)
     email = _user.get('email', None)
     password = _user.get('password', None)
-    logger.debug("WTF is username???{}, email???{}, password: {}".format(username, email, password))
 
     user = _retrieve_user(_username=username, _email=email)
     if user.verify_password(password):
@@ -89,6 +88,7 @@ def generate_api_token(_user):
         logger.debug("login failed, user: {}".format(user))
         raise UserException('provided_credentials_not_correct')
 
+    # TODO: ESClient add user_event
     result = {
         'token': token.key,
         'username': username,

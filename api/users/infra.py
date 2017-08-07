@@ -20,5 +20,4 @@ def create_user(user):
     except Exception as e:
         logger.error("Creating user, got error, traceback: {}".format(e))
         raise UserException(code='unknown_issue')
-
     return user

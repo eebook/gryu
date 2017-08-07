@@ -93,6 +93,9 @@ class EncryptedTokens(BaseModel, ModelSerializerMixin):
         'confirm_deleted_rows': False
     }
 
+    def __unicode__(self):
+        return self.key
+
     def __repr__(self):
         return '<EncryptedTokens: %s>' % self.users
 
@@ -102,4 +105,4 @@ class EncryptedTokens(BaseModel, ModelSerializerMixin):
         return super(EncryptedTokens, self).save()
 
     def generate_key(self):
-        return binascii.hexlify(os.urandom(20)).decode()
+        return binascii.hexlify(os.urandom(20)) #.decode()
