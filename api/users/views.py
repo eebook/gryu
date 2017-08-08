@@ -5,7 +5,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import logging
-from flask import request
+from flask import request, g
 
 from ..common.utils import json, token_auth
 from ..common.validation import schema
@@ -16,7 +16,7 @@ from . import domain
 logger = logging.getLogger(__name__)
 
 
-@auth_bp.route("/register", methods=["POST"])  # Dont allow GET method access should return 405 error
+@auth_bp.route("/register", methods=["POST"])  # TODO: Dont allow GET method access should return 405 error
 @json
 @schema('register_user.json')
 def register_user():
@@ -27,6 +27,7 @@ def register_user():
 
 
 @auth_bp.route("/exist", methods=["GET"])
+@token_auth.login_required
 def check_user_exist():
     """
     Check whether the user already exsits
@@ -40,10 +41,9 @@ def get_user_profile():
     """
     Get the user's basic information
     """
-    logger.debug("request dir???{}".format(dir(request)))
-    logger.debug("request.authentication???{}".format(request.authorization))
+    logger.debug("user {} is requesting the profile pages".format(g.user))
     return {
-        "TODO": "auth profile"
+        "TODO": "return user {}\' profile".format(g.user.username)
     }
 
 

@@ -31,13 +31,10 @@ class BaseModel(db.Model):
         return self
 
     def delete(self):
-        print("WTF is self???{}".format(self))
         num = db.session.delete(self)
-        print("delete num???{}".format(num))
         self._flush()
         db.session.commit()
         self._flush()
-        print("delete???")
         return self
 
     """
@@ -53,16 +50,12 @@ class BaseModel(db.Model):
 
     @classmethod
     def get_or_create(cls, defaults=None, **kwargs):
-        logger.debug("cls: {}".format(cls.__dict__))
-        logger.debug("defaults??? {}, kwargs??? {}".format(defaults, kwargs))
         instance = db.session.query(cls.__mapper__).filter_by(**kwargs).first()
         if instance:
-            print("have instance, instance???: {}".format(instance))
             return instance, False
         else:
             params = dict((k, v) for k, v in kwargs.items() if not isinstance(v, ClauseElement))
             params.update(defaults or {})
             instance = cls(**params)
             instance.save()
-            print("creating.....instance???: {}".format(instance))
             return instance, True

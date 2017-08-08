@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+
+import logging
 
 from sqlalchemy import String
 from sqlalchemy.types import TypeDecorator
 
 from .encrypt import EEBookCipher
+logger = logging.getLogger(__name__)
 
 
 class EncryptedCharField(TypeDecorator):
@@ -14,11 +18,10 @@ class EncryptedCharField(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
-        # print("process bind param, type of value???{}".format(type(value.decode())))
-        result = EEBookCipher().encrypt(value)
-        print("type???{}".format(type(result)))
+        result = EEBookCipher().encrypt(value.decode('utf-8'))
         return result
 
     def process_result_value(self, value, dialect):
-        return EEBookCipher().safe_decrypt(value)
+        result = EEBookCipher().safe_decrypt(value)
+        return result
 

@@ -93,11 +93,8 @@ class EncryptedTokens(BaseModel, ModelSerializerMixin):
         'confirm_deleted_rows': False
     }
 
-    def __unicode__(self):
-        return self.key
-
     def __repr__(self):
-        return '<EncryptedTokens: %s>' % self.users
+        return '<EncryptedTokens: {}, user_id: {}>'.format(key, self.users)
 
     def save(self):
         if not self.key:

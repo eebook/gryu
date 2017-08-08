@@ -23,20 +23,16 @@ class XORCipher(object):
         self.secret_key = secret_key
 
     def _xor_text(self, text):
-        logger.debug("xor text, text???{}".format(text))
-        logger.debug("type of text???{}".format(type(text)))
-        # logger.debug("type of text???{}".format(type(text.decode())))
-        logger.debug("xor text, secret_key???{}".format(self.secret_key))
-        # logger.debug("WTF is ord got: {}".format([(type(x), type(y)) for (x, y) in zip(text, cycle(self.secret_key))]))
-        return ''.join(chr(x ^ ord(y)) for (x, y) in zip(text, cycle(self.secret_key)))
+        result = ''.join(chr(ord(x) ^ ord(y)) for (x, y) in zip(text, cycle(self.secret_key)))
+        return result
 
     def encrypt(self, text):
-        test_type = self._xor_text(text).strip()
-        logger.debug("encrypt, type of test_type???{}".format(test_type))
-        return base64.encodebytes(self._xor_text(text)).strip()
+        result = base64.encodebytes(self._xor_text(text).encode()).decode()
+        return result
 
     def decrypt(self, text):
-        return self._xor_text(base64.decodebytes(text))
+        result = self._xor_text(base64.decodebytes(text.encode()).decode())
+        return result
 
 
 class EEBookCipher(XORCipher):
@@ -50,10 +46,8 @@ class EEBookCipher(XORCipher):
         return bool(isinstance(value, string_types) and value.startswith(self.PREFIX))
 
     def encrypt(self, value):
-        logger.debug("EEBookCipher, value???{}".format(value))
-        test_value = self.PREFIX + super(EEBookCipher, self).encrypt(value).decode()
-        logger.debug("EEBookCipher, returned value???{}".format(test_value))
-        return self.PREFIX + super(EEBookCipher, self).encrypt(value).decode()
+        encrypted_bytes = self.PREFIX + super(EEBookCipher, self).encrypt(value)
+        return encrypted_bytes
 
     def decrypt(self, value):
         assert self.is_encrypted_text(value), ('{} can not be decrypted by EEBookCipher, '
@@ -61,12 +55,10 @@ class EEBookCipher(XORCipher):
                                                'starts with {}'.format(value, self.PREFIX))
 
         value = value[len(self.PREFIX):]
-        logger.debug("value??? to decrypt{}".format(value))
         return super(EEBookCipher, self).decrypt(value)
 
     def safe_decrypt(self, value):
         if self.is_encrypted_text(value):
-            logger.debug("decrpted value???{}".format(self.decrypt(value)))
             return self.decrypt(value)
         else:
             return value

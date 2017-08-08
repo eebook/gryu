@@ -46,7 +46,8 @@ def create_user(user):
 
     _validate_signup(user)
     user = infra.create_user(user)
-    logger.debug("Successfully created user, user info: {}".format(user.to_dict(exclude=['_password'])))
+    logger.info("Successfully created user, user info: {}".format(user.to_dict(exclude=['_password'])))
+    logger.debug("User\'s activation key: {}".format(user.activationkeys))
     # TODO: Send an email with an activation code
     return user.to_dict(exclude=['_password'])
 
