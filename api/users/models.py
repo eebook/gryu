@@ -94,7 +94,7 @@ class EncryptedTokens(BaseModel, ModelSerializerMixin):
     }
 
     def __repr__(self):
-        return '<EncryptedTokens: {}, user_id: {}>'.format(key, self.users)
+        return '<EncryptedTokens: {}, user_id: {}>'.format(self.key, self.users)
 
     def save(self):
         if not self.key:

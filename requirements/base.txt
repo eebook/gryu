@@ -9,4 +9,5 @@ flask-wtf==0.14.2
 Flask-LogConfig==0.4.2
 sqlalchemy-utils==0.32.14
 jsonschema==2.6.0
+Flask-HTTPAuth==3.2.3
 

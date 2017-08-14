@@ -46,11 +46,12 @@ def create_app(config_name='dev'):
     @app.before_request
     def ensure_content_type():
         content_type = request.headers.get('Content-type')
+        logger.debug("WTF is request headers???{}".format(request.headers))
         if not content_type == 'application/json':
             raise APIException('invalid_content_type')
-        # TODO: Add API_TOKEN_HEADERS
-        if not request.headers.get(API_TOKEN_HEADERS, '') == os.environ.get('SECURE_API_KEY', ''):
-            raise APIException('permission_denied')
+        # # TODO: Add API_TOKEN_HEADERS
+        # if not request.headers.get(API_TOKEN_HEADERS, '') == os.environ.get('SECURE_API_KEY', ''):
+        #     raise APIException('permission_denied')
 
     # TODO: Do you understand?
     csrf = CSRFProtect()
