@@ -1,6 +1,6 @@
 {
-    "title": "Register User",
-    "description": "Create a User object",
+    "title": "Get user token",
+    "description": "Get the token with username and password",
     "type": "object",
     "$schema": "http://json-schema.org/draft-04/schema",
     "required": [

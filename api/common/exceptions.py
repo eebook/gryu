@@ -7,16 +7,15 @@ import os
 import logging
 import json
 import collections
-from werkzeug.exceptions import Conflict, NotFound, Unauthorized
 
 from . import status
 from .utils import convert_to_unicode as u
 from .utils import is_string, merge_dicts
 
 SOURCE = os.getenv('SOURCE', '1000')
-DEFAULT_CODE = 'unknown_issue'
+DEFAULT_CODE = 'bad_request'
 DEFAULT_MESSAGE = 'Unknown issue was caught and message was not specified'
-DEFAULT_ERROR_TYPE = 'server_error'
+DEFAULT_ERROR_TYPE = 'bad_request'
 logger = logging.getLogger(__name__)
 
 MAP_COMMON_ERRORS_MESSAGES = {

@@ -27,8 +27,8 @@ class Config:
                                   'database': DB_NAME
                               })
     SQLALCHEMY_TRACK_MODIFICATIONS = True
-    # TODO: Remove it
-    SECRET_KEY = 'alalalala'
+    SECRET_KEY = os.getenv('SECRET_KEY', '1a62be118cd66c49c4070af5e6f6bd46cb679b38')
+    ENCRYPT_EEBook = os.getenv('ENCRYPT_PREFIX', 'EEBook')
     WTF_CSRF_SECRET_KEY = 'alasdf'
     WTF_CSRF_CHECK_DEFAULT = False
 
