@@ -4,7 +4,7 @@
 
 ## DB
 
-`create database eebook`
+`create database gryu`
 
 TODO: use python
     

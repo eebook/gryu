@@ -29,12 +29,20 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     SECRET_KEY = os.getenv('SECRET_KEY', '1a62be118cd66c49c4070af5e6f6bd46cb679b38')
     ENCRYPT_EEBook = os.getenv('ENCRYPT_PREFIX', 'EEBook')
+
+    CCCC_CLIENT = {
+        'name': 'cccc',
+        'endpoint': os.getenv('CCCC_ENDPOINT', 'http://cccc:80'),
+        'endpoint': os.getenv('CCCC_API_PORT', 'v1')
+    }
+
+    # TODO: Delete
     WTF_CSRF_SECRET_KEY = 'alasdf'
     WTF_CSRF_CHECK_DEFAULT = False
 
     @staticmethod
     def init_app(app):
-        pass
+       pass
 
 
 class DevelopmentConfig(Config):

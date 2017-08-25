@@ -5,10 +5,11 @@ from __future__ import unicode_literals
 
 import functools
 import logging
+import six
 from flask import jsonify
 from flask import g
 from flask_httpauth import HTTPTokenAuth
-import six
+from werkzeug.routing import BaseConverter
 
 from .database import db
 
@@ -153,3 +154,9 @@ def verify_token(token):
         g.user = user
         return True
     return False
+
+
+class RegexConverter(BaseConverter):
+    def __init__(self, url_map, *items):
+        super(RegexConverter, self).__init__(url_map)
+        self.regex = items[0]

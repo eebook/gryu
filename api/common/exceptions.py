@@ -18,6 +18,7 @@ DEFAULT_MESSAGE = 'Unknown issue was caught and message was not specified'
 DEFAULT_ERROR_TYPE = 'bad_request'
 logger = logging.getLogger(__name__)
 
+
 MAP_COMMON_ERRORS_MESSAGES = {
     'invalid_args': {
         'message': 'Invalid parameters were passed'

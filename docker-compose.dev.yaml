@@ -1,7 +1,9 @@
+# Deprecated, Please use devbox
+
 version: '2'
 services:
   api:
-    image: $EE_BOOK_API_IMAGE
+    image: $GRYU_IMAGE
     build:
       context: .
       dockerfile: ./dockerfiles/dev/Dockerfile
@@ -14,15 +16,11 @@ services:
       - db
     tty: true
     ports:
-      - "$EEBOOK_API_WEB_PORT:5000"
+      - "$GRYU_API_PORT:5000"
     env_file:
       - envs/local.env
     environment:
       - ENV="development"
-  api-editor:
-    image: swaggerapi/swagger-editor
-    ports:
-      - "$EEBOOK_API_EDITOR:8080"
   db:
     image: $POSTGRES_IMAGE
     ports:

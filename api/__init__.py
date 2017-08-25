@@ -5,19 +5,19 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import logging
-import os
 from flask import Flask, Blueprint, request
 from flask_wtf.csrf import CSRFProtect
 from flask_logconfig import LogConfig
 
 from config import config
 from .middleware import TestMiddleware
-from .common.utils import json
+from .common.utils import json, RegexConverter
 from .common.middleware import response
 from .common.exceptions import APIException
 from .common.database import db
 # Import models so that they are registered with SQLAlchemy
 from api.users.models import Users, ActivationKeys, EncryptedTokens      # noqa
+
 
 BP_NAME = 'root'
 API_TOKEN_HEADERS = 'API_TOKEN'
@@ -46,12 +46,9 @@ def create_app(config_name='dev'):
     @app.before_request
     def ensure_content_type():
         content_type = request.headers.get('Content-type')
-        logger.debug("WTF is request headers???{}".format(request.headers))
+        logger.debug("Request headers: %s", request.headers)
         if not content_type == 'application/json':
             raise APIException('invalid_content_type')
-        # # TODO: Add API_TOKEN_HEADERS
-        # if not request.headers.get(API_TOKEN_HEADERS, '') == os.environ.get('SECURE_API_KEY', ''):
-        #     raise APIException('permission_denied')
 
     # TODO: Do you understand?
     csrf = CSRFProtect()
@@ -65,9 +62,16 @@ def create_app(config_name='dev'):
 
     db.init_app(app)
 
-    from .users import auth_bp as auth_bp
+    # Support regular expression,
+    # steal from https://stackoverflow.com/questions/5870188/does-flask-support-regular-expressions-in-its-url-routing
+    app.url_map.converters['regex'] = RegexConverter
     app.register_blueprint(root_bp, url_prefix='/v1')
+    from .users import auth_bp as auth_bp
     app.register_blueprint(auth_bp, url_prefix='/v1/auth')
+    from .jobs import jobs_bp as jobs_bp
+    app.register_blueprint(jobs_bp, url_prefix='/v1/jobs')
+    from .jobs import job_configs_bp as job_configs_bp
+    app.register_blueprint(job_configs_bp, url_prefix='/v1/job_configs')
 
     app.response_class = response.JSONResponse
     response.json_error_handler(app=app)
