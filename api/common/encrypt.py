@@ -5,11 +5,9 @@ from __future__ import unicode_literals
 
 import os
 import base64
-import itertools
 import logging
 from itertools import cycle
 
-from flask import current_app
 from six import string_types
 from six.moves import zip   # noqa
 

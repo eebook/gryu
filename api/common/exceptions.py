@@ -172,7 +172,7 @@ class APIException(JSONException):
         return self.message
 
 
-class FieldValidateFaield(APIException):
+class FieldValidateFailed(APIException):
 
     def __init__(self, fields, message=None, message_params=(), code='invalid_args'):
         assert isinstance(fields, (collections.Iterable, collections.Mapping)),\
@@ -188,9 +188,45 @@ class FieldValidateFaield(APIException):
 
         self.code = code
         self.fields = fields
-        super(FieldValidateFaield, self).__init__(self.code, message=message, message_params=message_params)
+        super(FieldValidateFailed, self).__init__(self.code, message=message, message_params=message_params)
 
     def to_dict(self):
-        data = super(FieldValidateFaield, self).to_dict()
+        data = super(FieldValidateFailed, self).to_dict()
         data['fields'] = self.fields
         return data
+
+
+class ServiceException(JSONException):
+    reversed_error_types_map = {
+        v['status_code']: k for k, v in MAP_ERROR_TYPES_STATUS_CODE.items()
+    }
+
+    def __init__(self, status_code, response_body, target_source=None):
+        self.status_code = status_code
+
+        json_data, text_data = {}, response_body
+
+        try:
+            json_data = json.loads(response_body)['errors'][0]
+        except (ValueError, KeyError, TypeError):
+            pass
+        if not isinstance(json_data, collections.Mapping):
+            json_data = {}
+        if 'source' in json_data:
+            self.source = json_data['source']
+        elif target_source:
+            self.source = target_source
+
+        if all([item in json_data for item in ('code', 'message')]):
+            self.code = json_data['code']
+            self.message = json_data['message']
+            if 'fields' in json_data:
+                self.fields = json_data['fields']
+            return
+
+        self.code = 'service_unwrapped_error'
+        try:
+            self.error_type = self.reversed_error_types_map[self.status_code]
+        except KeyError:
+            self.error_type = self.reversed_error_types_map[status.HTTP_500_INTERNAL_SERVER_ERROR]
+        self.message = text_data

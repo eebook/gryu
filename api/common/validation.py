@@ -126,14 +126,17 @@ def schema(path=None):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            _path = path.lstrip('/')
-            schema_path = os.path.join(SCHEMA_PATH, request.blueprint, _path)
-            logger.debug("SCHEMA_PATH: {}, request.blueprint: {}, _path: {}".format(SCHEMA_PATH, request.blueprint, _path))
-            payload = get_request_payload(request.method)(request)
+            print(request.data is not None)
+            if request.data is not None and request.data != b'':
+                _path = path.lstrip('/')
+                schema_path = os.path.join(SCHEMA_PATH, request.blueprint, _path)
+                logger.debug("SCHEMA_PATH: {}, request.blueprint: {}, _path: {}".format(
+                    SCHEMA_PATH, request.blueprint, _path))
+                payload = get_request_payload(request.method)(request)
 
-            errors = validate_schema(payload, get_schema(schema_path))
-            if errors:
-                raise APIException('invalid_request', message_params=errors)
+                errors = validate_schema(payload, get_schema(schema_path))
+                if errors:
+                    raise APIException('invalid_request', message_params=errors)
             return func(*args, **kwargs)
         return wrapper
     return decorator

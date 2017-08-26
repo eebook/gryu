@@ -6,6 +6,8 @@ from __future__ import unicode_literals
 import functools
 import logging
 import six
+
+import requests
 from flask import jsonify
 from flask import g
 from flask_httpauth import HTTPTokenAuth
@@ -13,9 +15,14 @@ from werkzeug.routing import BaseConverter
 
 from .database import db
 
+from . import status
+
+
+DEFAULT_TIMEOUT_SECONDS = 30
+
 
 token_auth = HTTPTokenAuth('Bearer')
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def merge_dicts(*dict_args):
@@ -160,3 +167,78 @@ class RegexConverter(BaseConverter):
     def __init__(self, url_map, *items):
         super(RegexConverter, self).__init__(url_map)
         self.regex = items[0]
+
+
+class DoRequest(object):
+    endpoint = None
+    headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    }
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def send(cls, path, auth=None, method='GET', endpoint=None,
+             params=None, data=None, headers=None, target_source=None,
+             timeout=DEFAULT_TIMEOUT_SECONDS):
+        if endpoint is None:
+            endpoint = cls.endpoint
+        url = '/'.join([endpoint, path.lstrip('/')])
+
+        LOGGER.info('requesting url={}, method={}, header={}, data={}, params={}, '
+                    'target_source={}'.format(url, method, headers, data, params, target_source))
+
+        if headers is None:
+            headers = cls.headers.copy()
+        else:
+            headers = merge_dicts(cls.headers, headers)
+
+        args = {'headers': headers, "timeout": timeout}
+        if auth is not None:
+            args['auth'] = auth
+        if params is not None:
+            args['params'] = params
+        if data is not None:
+            args['json'] = data
+
+        if method == 'POST':
+            response = requests.post(url, **args)
+        elif method == 'PUT':
+            response = requests.put(url, **args)
+        elif method == 'DELETE':
+            response = requests.delete(url, **args)
+        else:
+            response = requests.get(url, **args)
+
+        return cls._parse_response(response, target_source)
+
+    @classmethod
+    def _parse_response(cls, response, target_source):
+        from .exceptions import ServiceException
+        code = response.status_code
+        LOGGER.debug('response status_code={}, content={}'.format(code, convert_to_unicode(response.content)))
+
+        result = {
+            'status_code': code,
+            'data': None,
+        }
+
+        if code == status.HTTP_204_NO_CONTENT:
+            return result
+        elif code == status.HTTP_503_SERVICE_UNAVAILABLE:
+            raise ServiceException(status.HTTP_503_SERVICE_UNAVAILABLE,
+                                   'service is unavailable.', target_source)
+
+        try:
+            result['data'] = response.json()
+        except Exception as ex:
+            LOGGER.error('Failed to parse response: {}.\n'
+                         'Raw response text is {}.'.format(type(ex), response.text))
+            raise ServiceException(status.HTTP_500_INTERNAL_SERVER_ERROR,
+                                   'service data was not in valid json format.', target_source)
+
+        if not status.is_success(code):
+            raise ServiceException(code, response.text, target_source)
+        return result

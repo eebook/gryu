@@ -6,6 +6,8 @@ import datetime
 
 from sqlalchemy import Column, String, DateTime, ForeignKey
 from sqlalchemy_utils import ChoiceType
+from sqlalchemy.orm import relationship
+
 from ..common.database import BaseModel
 from ..common.serializers import ModelSerializerMixin
 
@@ -18,11 +20,13 @@ class Resources(BaseModel, ModelSerializerMixin):
         (RES_JOB_CONFIG, 'job config')
     ]
     __tablename__ = 'resources'
-    name = Column(String(128))
-    username = Column(String(15), unique=True)
+    name = Column(String(128), primary_key=True)
     created_by = Column(String(15), ForeignKey('users.username'))
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    uuid = Column(String(36), unique=True)
     type = Column(ChoiceType(TYPES))
+
+    users = relationship("Users", back_populates='resources')
 
     def __repr__(self):
         return '<Resource:%s>' % self.name

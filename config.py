@@ -5,6 +5,7 @@ import os
 
 from api.common.utils import get_log_config
 
+
 class Config:
     LOG_HANDLER = os.getenv('LOG_HANDLER', 'debug,info,error').split(',')
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'DEBUG')
@@ -33,7 +34,13 @@ class Config:
     CCCC_CLIENT = {
         'name': 'cccc',
         'endpoint': os.getenv('CCCC_ENDPOINT', 'http://cccc:80'),
-        'endpoint': os.getenv('CCCC_API_PORT', 'v1')
+        'version': os.getenv('CCCC_API_PORT', 'v1')
+    }
+
+    GRYU_HEADERS = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'gryu/v1.0'
     }
 
     # TODO: Delete
