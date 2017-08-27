@@ -3,7 +3,8 @@ from functools import singledispatch     # Only Python3 has this library
 
 from flask import jsonify, Response
 from werkzeug.exceptions import (BadRequest, ClientDisconnected, SecurityError,
-                                 BadHost, NotFound, MethodNotAllowed, BadRequest)
+                                 BadHost, Unauthorized, NotFound,
+                                 MethodNotAllowed, BadRequest)
 
 from ..exceptions import JSONException, APIException
 
@@ -66,6 +67,22 @@ def json_error_handler(app):
         """
         response = jsonify(error.to_dict())
         response.status_code = error.status_code
+        return response
+
+    @app.errorhandler(Unauthorized.code)
+    def unauthorized_error(error):
+        response = jsonify(
+            {
+                "errors": [
+                    {
+                        "code": "method_not_allowed",
+                        "messages": error.description,
+                        "source": "None"
+                    }
+                ]
+            }
+        )
+        response.status_code = error.code
         return response
 
     @app.errorhandler(NotFound.code)

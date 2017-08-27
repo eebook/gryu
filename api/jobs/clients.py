@@ -83,6 +83,14 @@ class JobClient(object):
         return CcccRequest.send('{}/{}'.format(JOBS, job_uuid), method='DELETE')['data']
 
     @classmethod
+    def get_job_status(cls, job_uuid):
+        return CcccRequest.send('{}/{}/status'.format(JOBS, job_uuid), method='GET')['data']
+
+    @classmethod
+    def update_job_status(cls, job_uuid, data):
+        return CcccRequest.send('{}/{}/status'.format(JOBS, job_uuid), method='PUT', data=data)['data']
+
+    @classmethod
     def get_job_logs(cls, job_uuid, start_time, end_time, limit):
         query_dict = {
             'start_time': start_time,

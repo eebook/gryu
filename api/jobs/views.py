@@ -24,38 +24,89 @@ APP_URL_REGEX = '[A-Za-z0-9-_.]+'
 LOGGER = logging.getLogger(__name__)
 
 
-@jobs_bp.route('/<regex("{}"):username>'.format(APP_URL_REGEX), methods=["GET", "POST"])
+@jobs_bp.route('', methods=["GET", "POST"])
 @json
-def list_start_jobs(username):
+@schema('start_job.json')
+@token_auth.login_required
+def list_start_jobs():
+    user = g.user
+    username = user.username
+
     if request.method == "GET":
-        LOGGER.info('List jobs ')
+        LOGGER.info('List jobs')
+        config_name  = request.args.get('config_name')
+        page = request.args.get('page')
+        page_size = request.args.get('page_size')
+        if config_name is not None:
+            config_name_list = config_name.split(',')
+            resource_obj = Resources.query.filter(Resources.name.in_(config_name_list), Resources.created_by==username).all()
+        else:
+            resource_obj = Resources.query.filter(Resources.created_by==username).all()
+        config_uuid_list = [i.uuid for i in resource_obj]
+        LOGGER.info('List jobs, config uuid list: %s', config_uuid_list)
+        job_list = JobClient.list_jobs(uuids=config_uuid_list, page=page, page_size=page_size)
+        LOGGER.info('job_list: {}'.format(job_list))
+        return job_list
     elif request.method == "POST":
         LOGGER.info('Start a job')
-    return {'asd': 'adsf'}
+        data = request.json
+        job_config_res = _get_resource_obj(data['config_name'], username)
+        # from ..users.views import generate_api_token
+        # TODO: to get token
+        LOGGER.info('request header: {}'.format(request.headers))
+        # LOGGER.info('user token: {}'.format(token))
+        # return
+        start_job_data = {
+            'config_uuid': job_config_res.uuid,
+            'created_by': username,
+            'user_token': 'TODO: usertoken'
+        }
+        result = JobClient.start_job(data=start_job_data)
+        return result
 
 
-@jobs_bp.route('/<regex("{}"):username>/<regex("{}"):job_uuid>'.format(
-    APP_URL_REGEX, UUID_REGEX), methods=["GET", "PUT", "DELETE"])
+@jobs_bp.route('/<regex("{}"):job_uuid>'.format(UUID_REGEX), methods=["GET", "PUT", "DELETE"])
 @json
-def retrieve_stop_delete_jobs(username, job_uuid):
-    LOGGER.info('username: %s, job_uuid: %s', username, job_uuid)
+def retrieve_stop_delete_jobs(job_uuid):
+    LOGGER.info('job_uuid: %s', job_uuid)
+    if request.method == 'GET':
+        result = JobClient.retrieve_job(job_uuid)
+        LOGGER.info('Get job history: %s', result)
+        if 'user_token' in result:
+            result.pop('user_token')
+        return result
+    elif request.method == 'PUT':
+        LOGGER.info('Stop a job, job uuid: %s', job_uuid)
+        # result = JobClient.delete_job(job_uuid)
+        result = JobClient.stop_job(job_uuid)
+        LOGGER.info('Delete a job, result: %s', result)
+        return {}, status.HTTP_204_NO_CONTENT
+    elif request.method == 'DELETE':
+        LOGGER.info('Delete a job, job uuid: %s', job_uuid)
+        result = JobClient.delete_job(job_uuid)
+        LOGGER.info('Delete a job, result: %s', result)
+        return {}, status.HTTP_204_NO_CONTENT
+
+
+@jobs_bp.route('/<regex("{}"):job_uuid>/logs'.format(UUID_REGEX), methods=["GET", "PUT", "DELETE"])
+@token_auth.login_required
+def get_logs(job_uuid):
+    LOGGER.info('Get logs, job_uuid: %s', job_uuid)
     return {'todo': 'todo'}
 
 
-@jobs_bp.route('/<regex("{}"):username>/<regex("{}"):job_uuid>/logs'.format(
-    APP_URL_REGEX, UUID_REGEX), methods=["GET", "PUT", "DELETE"])
+@jobs_bp.route('/<regex("{}"):job_uuid>/status'.format(UUID_REGEX), methods=["GET", "PUT"])
 @json
-def get_logs(username, job_uuid):
-    LOGGER.info('Get logs, username: %s, job_uuid: %s', username, job_uuid)
-    return {'todo': 'todo'}
-
-
-@jobs_bp.route('/<regex("{}"):username>/<regex("{}"):job_uuid>/status'.format(
-    APP_URL_REGEX, UUID_REGEX), methods=["GET", "PUT", "DELETE"])
-@json
-def get_update_job_status(username, job_uuid):
-    LOGGER.info('status, username: {}, job_uuid: {}'.format(username, job_uuid))
-    return {'todo': 'todo'}
+@token_auth.login_required
+def get_update_job_status(job_uuid):
+    if request.method == 'GET':
+        LOGGER.info('Get status, job_uuid: %s', job_uuid)
+        result = JobClient.get_job_status(job_uuid)
+        return result
+    elif request.method == 'PUT':
+        LOGGER.info('Update status, job_uuid: %s, data: %s', job_uuid, request.json)
+        JobClient.update_job_status(job_uuid, request.json)
+        return {}, status.HTTP_204_NO_CONTENT
 
 
 @job_configs_bp.route('', methods=['GET', 'POST'])
@@ -110,13 +161,7 @@ def list_create_job_config():
 @schema('update_job_config.json')
 @token_auth.login_required
 def get_put_delete_job_config(config_name):
-    def _get_resource_obj(_config_name, _username):
-        resource_obj = Resources.query.filter_by(name=_config_name, created_by=_username).all()
-        if len(resource_obj) != 0:
-            resource_obj = resource_obj[0]
-            return resource_obj
-        else:
-            raise JobsException('job_config_not_exist')
+
     user = g.user
     username = user.username
     LOGGER.info('get put delete job config, username: %s, config_name: %s', username, config_name)
@@ -152,4 +197,12 @@ def get_put_delete_job_config(config_name):
                 raise e
         return {}, status.HTTP_204_NO_CONTENT
 
+
+def _get_resource_obj(_config_name, _username):
+    resource_obj = Resources.query.filter_by(name=_config_name, created_by=_username).all()
+    if len(resource_obj) != 0:
+        resource_obj = resource_obj[0]
+        return resource_obj
+    else:
+        raise JobsException('job_config_not_exist')
 

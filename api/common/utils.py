@@ -133,6 +133,9 @@ def json(f):
     @functools.wraps(f)
     def wrapped(*args, **kwargs):
         rv = f(*args, **kwargs)
+        from .middleware.response import JSONResponse
+        if isinstance(rv, JSONResponse):
+            return rv
         status_or_headers = None
         headers = None
         if isinstance(rv, tuple):
