@@ -5,7 +5,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import logging
-from flask import request, g
+from flask import request, g, current_app
 
 from ..common.utils import json, token_auth
 from ..common.validation import schema
@@ -88,14 +88,14 @@ def retrieve_stop_delete_jobs(job_uuid):
         return {}, status.HTTP_204_NO_CONTENT
 
 
-@jobs_bp.route('/<regex("{}"):job_uuid>/logs'.format(UUID_REGEX), methods=["GET", "PUT", "DELETE"])
+@jobs_bp.route('/<regex("{}"):job_uuid>/logs/'.format(UUID_REGEX), methods=["GET", "PUT", "DELETE"])
 @token_auth.login_required
 def get_logs(job_uuid):
     LOGGER.info('Get logs, job_uuid: %s', job_uuid)
     return {'todo': 'todo'}
 
 
-@jobs_bp.route('/<regex("{}"):job_uuid>/status'.format(UUID_REGEX), methods=["GET", "PUT"])
+@jobs_bp.route('/<regex("{}"):job_uuid>/status/'.format(UUID_REGEX), methods=["GET", "PUT"])
 @json
 @token_auth.login_required
 def get_update_job_status(job_uuid):
@@ -131,8 +131,14 @@ def list_create_job_config():
     LOGGER.info('list, create job config: %s', username)
     if request.method == 'GET':
         LOGGER.info('Get job config list')
-        LOGGER.info('TODO')
-        return {'todo': 'todo'}
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('page_size', current_app.config['PAGINATE_BY']))
+        pagination_obj = Resources.query.filter_by(created_by=username).paginate(page, page_size, error_out=True)
+        # TODO: pagination
+        uuids = [item.uuid for item in pagination_obj.items]
+        result = JobClient.list_job_configs(uuids=uuids)
+        to_return = {"results": result, "count": pagination_obj.total, "page_num": pagination_obj.page, "page_size": pagination_obj.per_page, "page_total": pagination_obj.pages}
+        return to_return
     elif request.method == 'POST':
         data = request.json.copy()
         LOGGER.info('Create a job config with data: %s', data)
@@ -205,4 +211,3 @@ def _get_resource_obj(_config_name, _username):
         return resource_obj
     else:
         raise JobsException('job_config_not_exist')
-

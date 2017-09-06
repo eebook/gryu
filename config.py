@@ -30,6 +30,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     SECRET_KEY = os.getenv('SECRET_KEY', '1a62be118cd66c49c4070af5e6f6bd46cb679b38')
     ENCRYPT_EEBook = os.getenv('ENCRYPT_PREFIX', 'EEBook')
+    PAGINATE_BY = os.getenv('PAGINATE_BY', 10)
 
     CCCC_CLIENT = {
         'name': 'cccc',

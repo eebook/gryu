@@ -20,7 +20,6 @@ from . import status
 
 DEFAULT_TIMEOUT_SECONDS = 30
 
-
 token_auth = HTTPTokenAuth('Bearer')
 LOGGER = logging.getLogger(__name__)
 
@@ -43,8 +42,7 @@ def is_string(text):
     """
     if six.PY2:
         return isinstance(text, basestring)
-    else:
-        return isinstance(text, (str, bytes))
+    return isinstance(text, (str, bytes))
 
 
 def convert_to_unicode(text):
