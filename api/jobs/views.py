@@ -24,7 +24,8 @@ APP_URL_REGEX = '[A-Za-z0-9-_.]+'
 LOGGER = logging.getLogger(__name__)
 
 
-@jobs_bp.route('', methods=["GET", "POST"])
+@jobs_bp.route('', methods=["GET"])
+@jobs_bp.route('/', methods=["POST"])
 @json
 @schema('start_job.json')
 @token_auth.login_required
@@ -109,13 +110,14 @@ def get_update_job_status(job_uuid):
         return {}, status.HTTP_204_NO_CONTENT
 
 
-@job_configs_bp.route('', methods=['GET', 'POST'])
+@job_configs_bp.route('', methods=['GET'])
+@job_configs_bp.route('/', methods=['POST'])
 @json
 @schema('create_job_config.json')
 @token_auth.login_required
 def list_create_job_config():
     def _validate_resource(_data):
-        LOGGER.info('Validate resource, data: {}'.format(_data))
+        LOGGER.info('Validate resource, data: %s', _data)
         config_name = _data.get('config_name')
         LOGGER.info('Validate resource, config_name: %s', config_name)
 
