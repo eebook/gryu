@@ -2,7 +2,9 @@ import json
 from functools import singledispatch     # Only Python3 has this library
 
 from flask import jsonify, Response
-from werkzeug.exceptions import NotFound
+from werkzeug.exceptions import (BadRequest, ClientDisconnected, SecurityError,
+                                 BadHost, Unauthorized, NotFound,
+                                 MethodNotAllowed, BadRequest)
 
 from ..exceptions import JSONException, APIException
 
@@ -67,6 +69,22 @@ def json_error_handler(app):
         response.status_code = error.status_code
         return response
 
+    @app.errorhandler(Unauthorized.code)
+    def unauthorized_error(error):
+        response = jsonify(
+            {
+                "errors": [
+                    {
+                        "code": "method_not_allowed",
+                        "messages": error.description,
+                        "source": "None"
+                    }
+                ]
+            }
+        )
+        response.status_code = error.code
+        return response
+
     @app.errorhandler(NotFound.code)
     def resource_not_found(error):
         """
@@ -77,3 +95,34 @@ def json_error_handler(app):
         response = jsonify(APIException(code='resource_not_exist').to_dict())
         response.status_code = NotFound.code
         return response
+
+    @app.errorhandler(MethodNotAllowed.code)
+    def method_not_allowed(error):
+        response = jsonify(
+            {
+                "errors": [
+                    {
+                        "code": "method_not_allowed",
+                        "messages": error.description,
+                        "source": "None"
+                    }
+                ]
+            }
+        )
+        response.status_code = error.code
+        return response
+
+    @app.errorhandler(BadRequest.code)
+    def bad_request(error):
+        response = jsonify({
+            "errors": [
+                {
+                    "code": "bad_request",
+                    "messages": error.description,
+                    "source": "None"
+                }
+            ]
+        })
+        response.status_code = error.code
+        return response
+

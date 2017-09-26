@@ -1,0 +1,15 @@
+{
+  "title": "Start a job",
+  "description": "Start a job",
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "required": [
+    "config_name"
+  ],
+  "properties": {
+    "config_name": {
+      "type": "string",
+      "minLength": 4
+    }
+  }
+}

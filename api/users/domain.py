@@ -4,7 +4,7 @@
 import logging
 
 from . import infra
-from ..common.exceptions import FieldValidateFaield
+from ..common.exceptions import FieldValidateFailed
 from ..common import status
 from sqlalchemy import or_
 from .models import Users, ActivationKeys, EncryptedTokens
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def _retrieve_user(_username, _email):
     logger.debug("Retrieving user with account {}/{}".format(_username, _email))
     if _username is None and _email is None:
-        raise FieldValidateFaield(["Username or email is required"])
+        raise FieldValidateFailed(["Username or email is required"])
     if _username is not None:
         user = Users.query.filter_by(username=_username).first()
         if not user:
@@ -29,10 +29,10 @@ def _retrieve_user(_username, _email):
 
 
 def create_user(user):
-    def _validate_signup(user):
-        logger.debug("Validate signup, user info: {}".format(user))
-        username = user.get('username', None)
-        email = user.get('email', None)
+    def _validate_signup(_user):
+        logger.debug("Validate signup, user info: {}".format(_user))
+        username = _user.get('username', None)
+        email = _user.get('email', None)
 
         queryset = Users.query.filter(
             or_(Users.username == username,

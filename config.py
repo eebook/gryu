@@ -5,6 +5,7 @@ import os
 
 from api.common.utils import get_log_config
 
+
 class Config:
     LOG_HANDLER = os.getenv('LOG_HANDLER', 'debug,info,error').split(',')
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'DEBUG')
@@ -29,12 +30,27 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     SECRET_KEY = os.getenv('SECRET_KEY', '1a62be118cd66c49c4070af5e6f6bd46cb679b38')
     ENCRYPT_EEBook = os.getenv('ENCRYPT_PREFIX', 'EEBook')
+    PAGINATE_BY = os.getenv('PAGINATE_BY', 10)
+
+    CCCC_CLIENT = {
+        'name': 'cccc',
+        'endpoint': os.getenv('CCCC_ENDPOINT', 'http://cccc:80'),
+        'version': os.getenv('CCCC_API_PORT', 'v1')
+    }
+
+    GRYU_HEADERS = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'gryu/v1.0'
+    }
+
+    # TODO: Delete
     WTF_CSRF_SECRET_KEY = 'alasdf'
     WTF_CSRF_CHECK_DEFAULT = False
 
     @staticmethod
     def init_app(app):
-        pass
+       pass
 
 
 class DevelopmentConfig(Config):

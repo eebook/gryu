@@ -1,0 +1,10 @@
+{
+  "title": "Update job config",
+  "description": "Update a job config object",
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "required": [
+  ],
+  "properties": {
+  }
+}

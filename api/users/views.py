@@ -16,7 +16,7 @@ from . import domain
 logger = logging.getLogger(__name__)
 
 
-@auth_bp.route("/register", methods=["POST"])  # TODO: Dont allow GET method access should return 405 error
+@auth_bp.route("/register", methods=["POST"])
 @json
 @schema('register_user.json')
 def register_user():
@@ -47,7 +47,7 @@ def get_user_profile():
     }
 
 
-@auth_bp.route("/activate/<activation_key>", methods=["put"])
+@auth_bp.route("/activate/<activation_key>", methods=["PUT"])
 def activate(activation_key):
     """
     Activate user via uuid

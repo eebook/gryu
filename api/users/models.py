@@ -10,22 +10,20 @@ from uuid import uuid4
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import Column, String, DateTime, Boolean, Integer, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.types import TypeDecorator
-# TODO
-from sqlalchemy.orm import validates  # noqa
+# from sqlalchemy.orm import validates  # noqa
 
 from ..common.database import BaseModel
 from ..common.serializers import ModelSerializerMixin
 from ..common.fields import EncryptedCharField
 
 
-__all__ = ["Users"]
+__all__ = ['Users']
 
 
 class Users(BaseModel, ModelSerializerMixin):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
-    username = Column(String(10), unique=True)  # TODO: db_index?
+    username = Column(String(15), unique=True)  # TODO: db_index?
     email = Column(String(254), unique=True)
     _password = Column('password', String(100))
     is_active = Column(Boolean, default=False)
@@ -35,6 +33,7 @@ class Users(BaseModel, ModelSerializerMixin):
 
     activationkeys = relationship('ActivationKeys', uselist=False, back_populates='users')
     encryptedtokens = relationship('EncryptedTokens', uselist=False, back_populates='users')
+    resources = relationship('Resources', uselist=False, back_populates='users')
 
     def __repr__(self):
         return '<User:%s>' % self.username
@@ -102,4 +101,4 @@ class EncryptedTokens(BaseModel, ModelSerializerMixin):
         return super(EncryptedTokens, self).save()
 
     def generate_key(self):
-        return binascii.hexlify(os.urandom(20)) #.decode()
+        return binascii.hexlify(os.urandom(20))  # .decode()

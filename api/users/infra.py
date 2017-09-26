@@ -3,11 +3,11 @@
 
 import logging
 
-from .models import Users, ActivationKeys, EncryptedTokens
+from .models import Users, ActivationKeys
 from ..common.database import db
 from .exceptions import UserException
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def create_user(user):
@@ -18,6 +18,6 @@ def create_user(user):
         db.session.add(ak)
         db.session.commit()
     except Exception as e:
-        logger.error("Creating user, got error, traceback: {}".format(e))
+        LOGGER.error("Creating user, got error, traceback: %s", e)
         raise UserException(code='unknown_issue')
     return user
