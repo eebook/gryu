@@ -20,7 +20,7 @@ from . import status
 
 DEFAULT_TIMEOUT_SECONDS = 30
 
-token_auth = HTTPTokenAuth('Bearer')
+token_auth = HTTPTokenAuth('token')
 LOGGER = logging.getLogger(__name__)
 
 

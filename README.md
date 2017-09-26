@@ -27,3 +27,8 @@ $ docker-compose -f docker-compose.dev.yaml up
 ### log file path
 
 mkdir -p /var/log/eebook/
+
+
+## License
+
+[AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)

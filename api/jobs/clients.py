@@ -4,16 +4,10 @@
 
 import logging
 import os
-# from flask import current_app
 from ..common.utils import DoRequest
+from ..common import GRYU_HEADERS
 
 LOGGER = logging.getLogger(__name__)
-
-GRYU_HEADERS = {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-    'User-Agent': 'gryu/v1.0'
-}
 
 JOB_CONFIGS = 'job_configs'
 JOBS = 'jobs'

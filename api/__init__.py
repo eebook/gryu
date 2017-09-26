@@ -72,6 +72,8 @@ def create_app(config_name='dev'):
     app.register_blueprint(jobs_bp, url_prefix='/v1/jobs')
     from .jobs import job_configs_bp as job_configs_bp
     app.register_blueprint(job_configs_bp, url_prefix='/v1/job_configs')
+    from .search import search_bp
+    app.register_blueprint(search_bp, url_prefix='/v1/search')
 
     app.response_class = response.JSONResponse
     response.json_error_handler(app=app)
