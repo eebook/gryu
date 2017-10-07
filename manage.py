@@ -22,11 +22,6 @@ manager.add_command('db', MigrateCommand)
 
 
 @manager.command
-def test():
-    print("test")
-
-
-@manager.command
 def create_db(drop_first=False):
     """Creates the database."""
     if drop_first:

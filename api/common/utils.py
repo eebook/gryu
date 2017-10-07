@@ -112,13 +112,13 @@ def get_log_config(component, handlers, level='DEBUG', path='/var/log/eebook'):
         },
         'loggers': {
             'werkzeug': {
-                'handlers': handlers,
+                'handlers': ['info', 'console'],
                 'level': 'INFO',
                 'propagate': False
             },
             # api can not be empty, not consistent with Django, if have time, maybe help fix this?
             'api': {
-                'handlers': ['debug', 'info', 'error'],
+                'handlers': handlers,
                 'level': level,
                 'propagate': False
             }

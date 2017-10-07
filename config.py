@@ -10,7 +10,7 @@ class Config:
     LOG_HANDLER = os.getenv('LOG_HANDLER', 'debug,info,error').split(',')
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'DEBUG')
     LOG_PATH = os.getenv('LOG_PATH', '/var/log/eebook/')
-    LOGCONFIG = get_log_config(component='eebookorg', handlers=LOG_HANDLER, level=LOG_LEVEL, path=LOG_PATH)
+    LOGCONFIG = get_log_config(component='gryu', handlers=LOG_HANDLER, level=LOG_LEVEL, path=LOG_PATH)
     LOGCONFIG_QUEUE = ['eebook']
 
     DB_USER = os.getenv("DB_USER", 'postgres')
@@ -50,7 +50,7 @@ class Config:
 
     @staticmethod
     def init_app(app):
-       pass
+        pass
 
 
 class DevelopmentConfig(Config):
@@ -62,7 +62,7 @@ class TestingConfig(Config):
 
 
 class ProductionConfig(Config):
-    pass
+    LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
 
 
 config = {

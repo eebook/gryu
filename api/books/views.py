@@ -9,9 +9,10 @@ import logging
 from flask import request, g, current_app
 
 from ..common.utils import json, token_auth
-from . import search_bp
+from . import search_bp, books_bp
 from .clients import SearchClient
 
+UUID_REGEX = '[a-fA-F0-9-_.]{36}'
 LOGGER = logging.getLogger(__name__)
 
 
@@ -37,3 +38,13 @@ def content():
     if request.method == "GET":
         LOGGER.info('Search content')
         return {'data': 'Search content'}
+
+
+@books_bp.route('/detail/<regex("{}"):book_uuid>'.format(UUID_REGEX), methods=["GET"])
+@json
+@token_auth.login_required
+def book(book_uuid):
+    if request.method == "GET":
+        LOGGER.info('Get book, book id: %s', book_uuid)
+        book_result = SearchClient.get_book(book_uuid)
+        return book_result

@@ -49,7 +49,7 @@ def create_user(user):
     logger.info("Successfully created user, user info: {}".format(user.to_dict(exclude=['_password'])))
     logger.debug("User\'s activation key: {}".format(user.activationkeys))
     # TODO: Send an email with an activation code
-    # post payload: 
+    # post payload:
     return user.to_dict(exclude=['_password'])
 
 
@@ -80,7 +80,7 @@ def generate_api_token(_user):
 
     user = _retrieve_user(_username=username, _email=email)
     if user.verify_password(password):
-        logger.debug("WTF is user id???{}".format(user.id))
+        logger.debug("verify user, user id: {}".format(user.id))
         # token = EncryptedTokens.get_or_create(defaults=None, user_id=user.id)[0]
         # token.delete()
         # TODO: timed to let token expire
