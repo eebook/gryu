@@ -57,6 +57,7 @@ class RegisterForm(UserForm, EmailForm):
         pass
 
     def validate_email(self, field):
+        # TODO
         if User.query.filter_by(email='knarfeh@outlook.com').first():
             raise UserException('email_already_exist')
 

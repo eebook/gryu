@@ -66,7 +66,7 @@ def list_start_jobs():
         return result
 
 
-@jobs_bp.route('/<regex("{}"):job_uuid>'.format(UUID_REGEX), methods=["GET", "PUT", "DELETE"])
+@jobs_bp.route('/<regex("{}"):job_uuid>/'.format(UUID_REGEX), methods=["GET", "PUT", "DELETE"])
 @json
 def retrieve_stop_delete_jobs(job_uuid):
     LOGGER.info('job_uuid: %s', job_uuid)
@@ -93,12 +93,19 @@ def retrieve_stop_delete_jobs(job_uuid):
 @token_auth.login_required
 def get_logs(job_uuid):
     LOGGER.info('Get logs, job_uuid: %s', job_uuid)
-    return {'todo': 'todo'}
+    page = int(request.args.get('page', 1))
+    page_size = int(request.args.get('page_size', 1000))
+    start_time = request.args.get('start_time')
+    end_time = request.args.get('end_time')
+
+    result = JobClient.get_job_logs(job_uuid, start_time, end_time, page_size, page)
+
+    return result
 
 
-@jobs_bp.route('/<regex("{}"):job_uuid>/status/'.format(UUID_REGEX), methods=["GET", "PUT"])
+@jobs_bp.route('/<regex("{}"):job_uuid>/status'.format(UUID_REGEX), methods=["GET", "PUT"])
 @json
-@token_auth.login_required
+# @token_auth.login_required
 def get_update_job_status(job_uuid):
     if request.method == 'GET':
         LOGGER.info('Get status, job_uuid: %s', job_uuid)
