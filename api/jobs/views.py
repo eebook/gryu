@@ -103,7 +103,7 @@ def get_logs(job_uuid):
     return result
 
 
-@jobs_bp.route('/<regex("{}"):job_uuid>/status'.format(UUID_REGEX), methods=["GET", "PUT"])
+@jobs_bp.route('/<regex("{}"):job_uuid>/status/'.format(UUID_REGEX), methods=["GET", "PUT"])
 @json
 # @token_auth.login_required
 def get_update_job_status(job_uuid):

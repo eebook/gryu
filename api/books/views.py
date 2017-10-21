@@ -18,7 +18,6 @@ LOGGER = logging.getLogger(__name__)
 
 @search_bp.route('/book', methods=["GET"])
 @json
-@token_auth.login_required
 def search():
     if request.method == "GET":
         LOGGER.info('Search books')
