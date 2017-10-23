@@ -19,8 +19,8 @@ class SearchClient(object):
     @classmethod
     def search_books(cls, **args):
         LOGGER.info('Search books, args: %s', args)
-        return VhfwRequest.send('book', method='GET', params=args)['data']
+        return VhfwRequest.send('book', method='GET', params=args, target_source=18087)['data']
 
     @classmethod
     def get_book(cls, book_uuid):
-        return VhfwRequest.send('book/' + book_uuid, method='GET')['data']
+        return VhfwRequest.send('book/' + book_uuid, method='GET', target_source=18087)['data']

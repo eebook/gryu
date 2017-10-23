@@ -8,6 +8,7 @@ import logging
 import six
 
 import requests
+from requests.exceptions import ConnectionError, ConnectTimeout
 from flask import jsonify
 from flask import g
 from flask_httpauth import HTTPTokenAuth
@@ -203,15 +204,26 @@ class DoRequest(object):
             args['params'] = params
         if data is not None:
             args['json'] = data
-
-        if method == 'POST':
-            response = requests.post(url, **args)
-        elif method == 'PUT':
-            response = requests.put(url, **args)
-        elif method == 'DELETE':
-            response = requests.delete(url, **args)
-        else:
-            response = requests.get(url, **args)
+        try:
+            if method == 'POST':
+                response = requests.post(url, **args)
+            elif method == 'PUT':
+                response = requests.put(url, **args)
+            elif method == 'DELETE':
+                response = requests.delete(url, **args)
+            else:
+                response = requests.get(url, **args)
+        except ConnectTimeout as e:
+            LOGGER.error('Timeout, url: %s', url)
+            from .exceptions import ServiceException
+            raise ServiceException(status.HTTP_503_SERVICE_UNAVAILABLE, 'service timeout.', target_source)
+        except ConnectionError as e:
+            LOGGER.error('Connection error!, url: %s', url)
+            LOGGER.error('error: {}'.format(e))
+            from .exceptions import ServiceException
+            raise ServiceException(status.HTTP_503_SERVICE_UNAVAILABLE, 'service is unavailable.', target_source)
+        except Exception as e:
+            raise(e)
 
         return cls._parse_response(response, target_source)
 
