@@ -17,6 +17,7 @@ from .common.exceptions import APIException
 from .common.database import db
 # Import models so that they are registered with SQLAlchemy
 from api.users.models import Users, ActivationKeys, EncryptedTokens      # noqa
+from api.resources.models import Resources  # noqa
 
 
 BP_NAME = 'root'
@@ -71,9 +72,10 @@ def create_app(config_name='dev'):
     app.register_blueprint(jobs_bp, url_prefix='/v1/jobs')
     from .jobs import job_configs_bp as job_configs_bp
     app.register_blueprint(job_configs_bp, url_prefix='/v1/job_configs')
-    from .books import books_bp, search_bp
+    from .search import search_bp
     app.register_blueprint(search_bp, url_prefix='/v1/search')
-    app.register_blueprint(books_bp, url_prefix='/v1/book')
+    from .books import books_bp
+    app.register_blueprint(books_bp, url_prefix='/v1/books')
 
     app.response_class = response.JSONResponse
     response.json_error_handler(app=app)

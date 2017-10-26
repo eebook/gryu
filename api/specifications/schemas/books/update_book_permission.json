@@ -1,0 +1,14 @@
+{
+  "title": "Update a book",
+  "description": "Update a book's permission",
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "required": [
+    "is_public"
+  ],
+  "properties": {
+    "is_public": {
+        "type": "boolean"
+      }
+    }
+}

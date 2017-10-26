@@ -35,23 +35,23 @@ def list_start_jobs():
 
     if request.method == "GET":
         LOGGER.info('List jobs')
-        config_name  = request.args.get('config_name')
+        config_name = request.args.get('config_name')
         page = request.args.get('page')
         page_size = request.args.get('page_size')
         if config_name is not None:
             config_name_list = config_name.split(',')
-            resource_obj = Resources.query.filter(Resources.name.in_(config_name_list), Resources.created_by==username).all()
+            resource_obj = Resources.query.filter(Resources.name.in_(config_name_list), Resources.created_by==username, Resources.type=='JOB_CONFIG').all()
         else:
-            resource_obj = Resources.query.filter(Resources.created_by==username).all()
+            resource_obj = Resources.query.filter(Resources.created_by==username, Resources.type=='JOB_CONFIG').all()
         config_uuid_list = [i.uuid for i in resource_obj]
         LOGGER.info('List jobs, config uuid list: %s', config_uuid_list)
         job_list = JobClient.list_jobs(uuids=config_uuid_list, page=page, page_size=page_size)
-        LOGGER.info('job_list: {}'.format(job_list))
+        LOGGER.info('job_list: %s', job_list)
         return job_list
     elif request.method == "POST":
         LOGGER.info('Start a job')
         data = request.json
-        job_config_res = _get_resource_obj(data['config_name'], username)
+        job_config_res = infra.get_resource_obj(data['config_name'], username, 'JOB_CONFIG')
         # from ..users.views import generate_api_token
         # TODO: to get token
         LOGGER.info('request header: {}'.format(request.headers))
@@ -99,13 +99,13 @@ def get_logs(job_uuid):
     end_time = request.args.get('end_time')
 
     result = JobClient.get_job_logs(job_uuid, start_time, end_time, page_size, page)
-
     return result
 
 
 @jobs_bp.route('/<regex("{}"):job_uuid>/status/'.format(UUID_REGEX), methods=["GET", "PUT"])
 @json
 # @token_auth.login_required
+# TODO: interner api
 def get_update_job_status(job_uuid):
     if request.method == 'GET':
         LOGGER.info('Get status, job_uuid: %s', job_uuid)
@@ -126,14 +126,14 @@ def list_create_job_config():
     def _validate_resource(_data):
         LOGGER.info('Validate resource, data: %s', _data)
         config_name = _data.get('config_name')
-        LOGGER.info('Validate resource, config_name: %s', config_name)
 
-        queryset = Resources.query.filter(
-            Resources.name == _data['config_name']
+        queryset = Resources.query.filter_by(
+            name=config_name,
+            type='JOB_CONFIG',
+            created_by=username
         ).all()
         if len(queryset) != 0:
-            raise ResourcesException('resource_name_conflict')
-        # TODO: query config name to verify config_name
+            raise JobsException('job_config_name_conflict')
 
     user = g.user
     username = user.username
@@ -143,10 +143,16 @@ def list_create_job_config():
         page = int(request.args.get('page', 1))
         page_size = int(request.args.get('page_size', current_app.config['PAGINATE_BY']))
         pagination_obj = Resources.query.filter_by(created_by=username).paginate(page, page_size, error_out=True)
-        # TODO: pagination
+        # TODO: pagination for jobclient
         uuids = [item.uuid for item in pagination_obj.items]
         result = JobClient.list_job_configs(uuids=uuids)
-        to_return = {"results": result, "count": pagination_obj.total, "page_num": pagination_obj.page, "page_size": pagination_obj.per_page, "page_total": pagination_obj.pages}
+        to_return = {
+            "results": result,
+            "count": pagination_obj.total,
+            "page_num": pagination_obj.page,
+            "page_size": pagination_obj.per_page,
+            "page_total": pagination_obj.pages
+        }
         return to_return
     elif request.method == 'POST':
         data = request.json.copy()
@@ -165,32 +171,32 @@ def list_create_job_config():
         try:
             infra.create_resource(resource_data)
         except Exception as e:
+            LOGGER.error('Got unknow error: %s', e.message)
             JobClient.delete_job_configs(config_uuid=config['config_uuid'])
 
         return config, status.HTTP_201_CREATED
 
 
-@job_configs_bp.route('/<regex("{}"):config_name>'.format(APP_URL_REGEX),
-                      methods=["GET", "PUT", "DELETE"])
+@job_configs_bp.route('/<regex("{}"):config_name>/'.format(APP_URL_REGEX),
+                      methods=["GET","DELETE"])
 @json
-@schema('update_job_config.json')
 @token_auth.login_required
-def get_put_delete_job_config(config_name):
+def get_delete_job_config(config_name):
 
     user = g.user
     username = user.username
-    LOGGER.info('get put delete job config, username: %s, config_name: %s', username, config_name)
+    LOGGER.info('get/delete job config, username: %s, config_name: %s', username, config_name)
 
     if request.method == 'GET':
         LOGGER.info('Get job config, ')
-        job_config_res = _get_resource_obj(config_name, username)
+        job_config_res = infra.get_resource_obj(config_name, username, 'JOB_CONFIG')
         job_config = JobClient.retrieve_job_configs(config_uuid=job_config_res.uuid)
         LOGGER.info('Got job_config from cccc: %s', job_config)
         return job_config
 
     elif request.method == 'PUT':
         LOGGER.info('Update job config, config_name: %s, with data: %s', config_name, request.json)
-        job_config_res = _get_resource_obj(config_name, username)
+        job_config_res = infra.get_resource_obj(config_name, username, 'JOB_CONFIG')
         job_config = JobClient.update_job_configs(data=request.json,
                                                   config_uuid=job_config_res.uuid)
         LOGGER.debug('Update job config, result: %s', job_config)
@@ -198,7 +204,7 @@ def get_put_delete_job_config(config_name):
 
     elif request.method == 'DELETE':
         LOGGER.info('Delete job config, config_name: %s', config_name)
-        job_config_resource = _get_resource_obj(config_name, username)
+        job_config_resource = infra.get_resource_obj(config_name, username, 'JOB_CONFIG')
         LOGGER.info('job_config_resource to delete: %s', job_config_resource)
 
         try:
@@ -213,10 +219,17 @@ def get_put_delete_job_config(config_name):
         return {}, status.HTTP_204_NO_CONTENT
 
 
-def _get_resource_obj(_config_name, _username):
-    resource_obj = Resources.query.filter_by(name=_config_name, created_by=_username).all()
-    if len(resource_obj) != 0:
-        resource_obj = resource_obj[0]
-        return resource_obj
-    else:
-        raise JobsException('job_config_not_exist')
+@job_configs_bp.route('/<regex("{}"):config_name>/'.format(APP_URL_REGEX),
+                      methods=["GET", "PUT", "DELETE"])
+@json
+@schema('update_job_config.json')
+@token_auth.login_required
+def update_job_config(config_name):
+    user = g.user
+    username = user.username
+    LOGGER.info('Update job config, config_name: %s, with data: %s, username: %s', config_name, request.json, username)
+    job_config_res = infra.get_resource_obj(config_name, username, 'JOB_CONFIG')
+    job_config = JobClient.update_job_configs(data=request.json,
+                                                config_uuid=job_config_res.uuid)
+    LOGGER.debug('Update job config, result: %s', job_config)
+    return {}, status.HTTP_204_NO_CONTENT

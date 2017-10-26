@@ -16,6 +16,9 @@ python manage.py db upgrade
 python manage.py db --help
 ```
 
+### Drop resource key. Executed in the database container
+
+
 ## init config
 
 ### environment

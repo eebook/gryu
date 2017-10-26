@@ -11,6 +11,10 @@ class ResourcesException(APIException):
             'message': 'Name should start with letter and can contain number, letter, dot, '
             'underscore and dash.',
             'type': 'bad_request'
+        },
+        'resource_not_exist': {
+            'message': 'Resource is not exist.',
+            'type': 'not_found'
         }
     }
 

@@ -10,13 +10,13 @@ from sqlalchemy import or_
 from .models import Users, ActivationKeys, EncryptedTokens
 from .exceptions import UserException
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def _retrieve_user(_username, _email):
-    logger.debug("Retrieving user with account {}/{}".format(_username, _email))
+    LOGGER.debug("Retrieving user with account %s/%s", _username, _email)
     if _username is None and _email is None:
-        raise FieldValidateFailed(["Username or email is required"])
+        raise FieldValidateFailed(["email", "username"])
     if _username is not None:
         user = Users.query.filter_by(username=_username).first()
         if not user:
@@ -30,7 +30,7 @@ def _retrieve_user(_username, _email):
 
 def create_user(user):
     def _validate_signup(_user):
-        logger.debug("Validate signup, user info: {}".format(_user))
+        LOGGER.debug("Validate signup, user info: {}".format(_user))
         username = _user.get('username', None)
         email = _user.get('email', None)
 
@@ -46,8 +46,8 @@ def create_user(user):
 
     _validate_signup(user)
     user = infra.create_user(user)
-    logger.info("Successfully created user, user info: {}".format(user.to_dict(exclude=['_password'])))
-    logger.debug("User\'s activation key: {}".format(user.activationkeys))
+    LOGGER.info("Successfully created user, user info: {}".format(user.to_dict(exclude=['_password'])))
+    LOGGER.debug("User\'s activation key: {}".format(user.activationkeys))
     # TODO: Send an email with an activation code
     # post payload:
     return user.to_dict(exclude=['_password'])
@@ -74,26 +74,26 @@ def activate_user(activate_key):
 def generate_api_token(_user):
     # Check out whether the user has been activated, TODO: use serializer
     # TODO: active_tmp_password_users
-    username = _user.get('username', None)
+    # username = _user.get('username', None)
     email = _user.get('email', None)
     password = _user.get('password', None)
 
-    user = _retrieve_user(_username=username, _email=email)
+    # user = _retrieve_user(_username=username, _email=email)
+    user = _retrieve_user(_username=None, _email=email)
     if user.verify_password(password):
-        logger.debug("verify user, user id: {}".format(user.id))
-        # token = EncryptedTokens.get_or_create(defaults=None, user_id=user.id)[0]
+        LOGGER.debug("verify user, user id: %s", user.id)
         # token.delete()
         # TODO: timed to let token expire
         token = EncryptedTokens.get_or_create(defaults=None, user_id=user.id)[0]
-        logger.debug("token: {}".format(token))
+        LOGGER.debug("token: %s", token)
     else:
-        logger.debug("login failed, user: {}".format(user))
+        LOGGER.debug("login failed, user: %s", user)
         raise UserException('provided_credentials_not_correct')
 
     # TODO: ESClient add user_event
     result = {
         'token': token.key,
-        'username': username,
+        'username': user.username,
         'email': email
     }
 

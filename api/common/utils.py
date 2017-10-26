@@ -255,3 +255,4 @@ class DoRequest(object):
         if not status.is_success(code):
             raise ServiceException(code, response.text, target_source)
         return result
+

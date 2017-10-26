@@ -1,13 +1,13 @@
- {
-  "title": "Create job config",
-  "description": "Create a job config object",
+{
+  "title": "Create a book",
+  "description": "Create a book object",
   "type": "object",
   "$schema": "http://json-schema.org/draft-04/schema",
   "required": [
-    "config_name"
+    "book_name"
   ],
   "properties": {
-    "config_name": {
+    "book_name": {
         "type": "string",
         "minLength": 4
       }

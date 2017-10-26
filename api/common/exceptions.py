@@ -12,7 +12,7 @@ from . import status
 from .utils import convert_to_unicode as u
 from .utils import is_string, merge_dicts
 
-SOURCE = os.getenv('SOURCE', '1000')
+SOURCE = os.getenv('SOURCE', '18083')
 DEFAULT_CODE = 'bad_request'
 DEFAULT_MESSAGE = 'Unknown issue was caught and message was not specified'
 DEFAULT_ERROR_TYPE = 'bad_request'
