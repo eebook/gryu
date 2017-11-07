@@ -37,9 +37,9 @@ class JobClient(object):
 
     @classmethod
     def create_job_configs(cls, data):
-        data = CcccRequest.send(JOB_CONFIGS, method='POST', data=data)['data']
-        LOGGER.info('data: {}'.format(data))
-        return data
+        result = CcccRequest.send(JOB_CONFIGS, method='POST', data=data)['data']
+        LOGGER.info('Create job config, result: {}'.format(result))
+        return result
 
     @classmethod
     def retrieve_job_configs(cls, config_uuid):

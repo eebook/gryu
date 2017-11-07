@@ -11,6 +11,8 @@ from sqlalchemy import or_
 from .models import Users, ActivationKeys, EncryptedTokens
 from .exceptions import UserException
 from ..cache import RedisCache
+from .utils import generate_verication_code
+from ..common.clients import CourierClient
 
 LOGGER = logging.getLogger(__name__)
 
@@ -105,6 +107,15 @@ def generate_api_token(_user):
 def send_captcha_code(_data):
     email = _data.get('email', None)
     user = _retrieve_user(_username=None, _email=email)
-    value = RedisCache().reader.get('test')
-    print('value???{}'.format(value))
-    RedisCache().test_connection()
+    captcha_code = generate_verication_code(email)
+    client = CourierClient()
+    data = {
+        "email_type": "verify_code",
+        "recipient_list": ["knarfeh@outlook.com"],
+        "params": {
+            "username": user.username,
+            "captcha_code": captcha_code
+        }
+    }
+    result = client.email(data)
+    return result

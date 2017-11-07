@@ -187,6 +187,7 @@ class DoRequest(object):
         'Accept': 'application/json',
         'Content-Type': 'application/json'
     }
+    target_source = None
 
     class Meta:
         abstract = True
@@ -197,6 +198,8 @@ class DoRequest(object):
              timeout=DEFAULT_TIMEOUT_SECONDS):
         if endpoint is None:
             endpoint = cls.endpoint
+        if target_source is None:
+            target_source = cls.target_source
         url = '/'.join([endpoint, path.lstrip('/')])
 
         LOGGER.info('requesting url={}, method={}, header={}, data={}, params={}, '
