@@ -44,8 +44,8 @@ MAP_COMMON_ERRORS_MESSAGES = {
         'type': 'bad_request'
     },
     'invalid_request': {
-        'message': 'Not verified by json schema, errors: {}',
-        'type': 'bad_request'
+        'message': '{}',
+        'type': 'bad_json_schema'
     }
 }
 

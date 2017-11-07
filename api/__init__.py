@@ -66,14 +66,20 @@ def create_app(config_name='dev'):
     # steal from https://stackoverflow.com/questions/5870188/does-flask-support-regular-expressions-in-its-url-routing
     app.url_map.converters['regex'] = RegexConverter
     app.register_blueprint(root_bp, url_prefix='/v1')
-    from .users import auth_bp as auth_bp
-    app.register_blueprint(auth_bp, url_prefix='/v1/auth')
+
+    from .users import users_bp, user_bp
+    app.register_blueprint(users_bp, url_prefix='/v1/auth')
+    app.register_blueprint(user_bp, url_prefix='/v1/user')
+
     from .jobs import jobs_bp as jobs_bp
     app.register_blueprint(jobs_bp, url_prefix='/v1/jobs')
+
     from .jobs import job_configs_bp as job_configs_bp
     app.register_blueprint(job_configs_bp, url_prefix='/v1/job_configs')
+
     from .search import search_bp
     app.register_blueprint(search_bp, url_prefix='/v1/search')
+
     from .books import books_bp
     app.register_blueprint(books_bp, url_prefix='/v1/books')
 

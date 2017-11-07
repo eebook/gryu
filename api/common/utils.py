@@ -46,6 +46,16 @@ def is_string(text):
     return isinstance(text, (str, bytes))
 
 
+def str2bool(v):
+    return v and v.lower() in ("yes", "true", "t", "1")
+
+
+def str2int(v, default):
+    try:
+        return int(v)
+    except:
+        return default
+
 def convert_to_unicode(text):
     """
     :param text: input content

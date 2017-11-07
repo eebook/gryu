@@ -7,8 +7,10 @@ from . import infra
 from ..common.exceptions import FieldValidateFailed
 from ..common import status
 from sqlalchemy import or_
+
 from .models import Users, ActivationKeys, EncryptedTokens
 from .exceptions import UserException
+from ..cache import RedisCache
 
 LOGGER = logging.getLogger(__name__)
 
@@ -98,3 +100,11 @@ def generate_api_token(_user):
     }
 
     return result
+
+
+def send_captcha_code(_data):
+    email = _data.get('email', None)
+    user = _retrieve_user(_username=None, _email=email)
+    value = RedisCache().reader.get('test')
+    print('value???{}'.format(value))
+    RedisCache().test_connection()

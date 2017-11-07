@@ -4,7 +4,10 @@
 
 from flask import Blueprint
 
-BP_NAME = 'users'
-auth_bp = Blueprint(BP_NAME, __name__)
+USERS_BP_NAME = 'users'
+USER_BP_NAME = 'user'
+users_bp = Blueprint(USERS_BP_NAME, __name__)
+user_bp = Blueprint(USER_BP_NAME, __name__)
+
 
 from . import views  # noqa

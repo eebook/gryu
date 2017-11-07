@@ -1,0 +1,15 @@
+{
+  "title": "Send verify code",
+  "description": "Send verify code",
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "required": [
+    "email"
+  ],
+  "properties": {
+    "email": {
+      "type": "string",
+      "format": "email"
+    }
+  }
+}
