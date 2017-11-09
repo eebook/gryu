@@ -11,8 +11,10 @@ from sqlalchemy import or_
 from .models import Users, ActivationKeys, EncryptedTokens
 from .exceptions import UserException
 from ..cache import RedisCache
-from .utils import generate_verication_code
+from .utils import generate_verication_code, validate_verify_code
 from ..common.clients import CourierClient
+from ..common.exceptions import FieldValidateFailed
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -119,3 +121,14 @@ def send_captcha_code(_data):
     }
     result = client.email(data)
     return result
+
+
+def reset_password(_data):
+    account = _data.get('account', None)
+    verify_code = _data.get('captcha', None)
+    password = _data.get('password')
+    if not validate_verify_code(account, verify_code):
+        raise FieldValidateFailed({'captcha': ['captcha is invalid']})
+    user_obj = _retrieve_user(_username=None, _email=account)
+    infra.update_user_password(user_obj, password)
+    return

@@ -69,8 +69,18 @@ def generate_api_token():
 @user_bp.route("/send_verify_code", methods=["POST"])
 @json
 @schema('send_verify_code.json')
-# TODO: Inner
+# TODO: Inner api
 def send_captcha_code():
-    LOGGER.debug('request.json: %s', request.json)
+    LOGGER.debug('Send verify code, request.json: %s', request.json)
     domain.send_captcha_code(request.json)
     return {}, status.HTTP_204_NO_CONTENT
+
+
+@user_bp.route("/reset_password", methods=["POST"])
+@json
+@schema('reset_password.json')
+# TODO: Inner api
+def reset_password():
+    LOGGER.debug('Reset password, request.json: %s', request.json)
+    domain.reset_password(request.json)
+    return {'status': 'success'}, status.HTTP_200_OK
