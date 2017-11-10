@@ -18,7 +18,10 @@ class EncryptedCharField(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
-        result = EEBookCipher().encrypt(value.decode('utf-8'))
+        if type(value) != str:
+            result = EEBookCipher().encrypt(value.decode('utf-8'))
+        else:
+            result = EEBookCipher().encrypt(value)
         return result
 
     def process_result_value(self, value, dialect):

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import datetime
 
 from .models import Users, ActivationKeys, EncryptedTokens
 from ..common.database import db
@@ -28,9 +29,18 @@ def update_user_password(_user_obj, _password):
         _user_obj.password = _password
         delete_num = EncryptedTokens.query.filter_by(user_id=_user_obj.id).delete()
         LOGGER.debug('[Update password] Delete tokens of %s, deleted number: %s', _user_obj.username, delete_num)
+        _user_obj.updated_at = datetime.datetime.utcnow()
         db.session.add(_user_obj)
         db.session.commit()
     except Exception as e:
         LOGGER.error("Update user password, got error, traceback: %s", e)
         raise UserException(code='unknown_issue')
-    return
+
+
+def update_user_last_login(_user_obj):
+    try:
+        _user_obj.last_login = datetime.datetime.utcnow()
+        db.session.commit()
+    except Exception as e:
+        LOGGER.error('Update user last login, got error, traceback: %s', e)
+        raise UserException(code='unknown_issue')

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import datetime
 
 from . import infra
 from ..common.exceptions import FieldValidateFailed
@@ -88,10 +89,10 @@ def generate_api_token(_user):
     user = _retrieve_user(_username=None, _email=email)
     if user.verify_password(password):
         LOGGER.debug("verify user, user id: %s", user.id)
-        # token.delete()
         # TODO: timed to let token expire
         token = EncryptedTokens.get_or_create(defaults=None, user_id=user.id)[0]
-        LOGGER.debug("token: %s", token)
+        infra.update_user_last_login(user)
+        LOGGER.debug("User login, token: %s", token)
     else:
         LOGGER.debug("login failed, user: %s", user)
         raise UserException('provided_credentials_not_correct')

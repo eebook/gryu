@@ -16,8 +16,7 @@ def generate_verication_code(account):
     redis_key = 'captcha:' + account
     LOGGER.debug('Generating code %s for %s', code, redis_key)
     RedisCache().writer.set(redis_key, code)
-    # RedisCache().writer.expire(redis_key, 600)   # Ten minutes
-    RedisCache().writer.expire(redis_key, 6000)   # Debug
+    RedisCache().writer.expire(redis_key, 600)   # Ten minutes
     return code
 
 
@@ -28,10 +27,9 @@ def validate_verify_code(account, code):
     if real_value is None:
         return False
     real_value = int(real_value)
-    if real_value == code:
+    if real_value == int(code):
         LOGGER.info('Code %s is correct', code)
-        # DEBUG
-        # RedisCache().writer.expire('captcha:'+account, 1)
+        RedisCache().writer.expire('captcha:'+account, 1)
         return True
     LOGGER.info('Validate token failed')
     return False

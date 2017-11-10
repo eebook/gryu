@@ -53,6 +53,10 @@ class Users(BaseModel, ModelSerializerMixin):
     def password(self, raw):
         self._password = generate_password_hash(raw)
 
+    # @last_login.setter
+    # def last_login(self, raw):
+    #     self.last_login = raw
+
     def verify_password(self, raw):
         if not self._password:
             return False
