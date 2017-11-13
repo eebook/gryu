@@ -1,5 +1,5 @@
 FROM python:3.6.0rc2-alpine
-MAINTAINER He Jun knarfeh@outlook.com
+LABEL maintainer="knarfeh@outlook.com"
 
 # base pkgs
 RUN apk --update add --no-cache openssl ca-certificates postgresql-dev
