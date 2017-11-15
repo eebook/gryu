@@ -71,6 +71,9 @@ def create_app(config_name='dev'):
     app.register_blueprint(users_bp, url_prefix='/v1/auth')
     app.register_blueprint(user_bp, url_prefix='/v1/user')
 
+    from .books import books_bp
+    app.register_blueprint(books_bp, url_prefix='/v1/books')
+
     from .jobs import jobs_bp as jobs_bp
     app.register_blueprint(jobs_bp, url_prefix='/v1/jobs')
 
@@ -80,8 +83,8 @@ def create_app(config_name='dev'):
     from .search import search_bp
     app.register_blueprint(search_bp, url_prefix='/v1/search')
 
-    from .books import books_bp
-    app.register_blueprint(books_bp, url_prefix='/v1/books')
+    from .url_metadata import url_metadata_bp
+    app.register_blueprint(url_metadata_bp, url_prefix='/v1/url_metadata')
 
     app.response_class = response.JSONResponse
     response.json_error_handler(app=app)

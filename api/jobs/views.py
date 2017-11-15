@@ -188,7 +188,7 @@ def get_delete_job_config(config_name):
     LOGGER.info('get/delete job config, username: %s, config_name: %s', username, config_name)
 
     if request.method == 'GET':
-        LOGGER.info('Get job config, ')
+        LOGGER.info('Get job config')
         job_config_res = infra.get_resource_obj(config_name, username, 'JOB_CONFIG')
         job_config = JobClient.retrieve_job_configs(config_uuid=job_config_res.uuid)
         LOGGER.info('Got job_config from cccc: %s', job_config)
