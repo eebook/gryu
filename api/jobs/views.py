@@ -218,6 +218,20 @@ def get_delete_job_config(config_name):
                 raise e
         return {}, status.HTTP_204_NO_CONTENT
 
+@job_configs_bp.route('/<regex("{}"):config_name>/exist'.format(APP_URL_REGEX), methods=["GET"])
+@json
+@token_auth.login_required
+def check_job_config_exist(config_name):
+    """
+    Check job config name already exists, return 404 if not.
+    """
+    user = g.user
+    username = user.username
+    LOGGER.info('Check whether job config_name exist, config_name: %s', config_name)
+
+    if request.method == 'GET':
+        infra.get_resource_obj(config_name, username, 'JOB_CONFIG')
+        return {'exist': True}
 
 @job_configs_bp.route('/<regex("{}"):config_name>/'.format(APP_URL_REGEX),
                       methods=["GET", "PUT", "DELETE"])

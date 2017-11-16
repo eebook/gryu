@@ -1,0 +1,14 @@
+{
+  "title": "Get url's metadata",
+  "description": "Get url's metadata",
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "required": [
+    "url"
+  ],
+  "properties": {
+    "url": {
+      "type": "string"
+    }
+  }
+}

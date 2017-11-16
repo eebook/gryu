@@ -9,13 +9,17 @@ import logging
 from flask import request, g, current_app
 
 from . import url_metadata_bp
+from .exceptions import UrlMetadataException
 from ..common.utils import json, token_auth
+from ..common.validation import schema
+
 
 LOGGER = logging.getLogger(__name__)
 
 
 @url_metadata_bp.route('', methods=['POST'])
 @json
+@schema('get_url_metadata.json')
 @token_auth.login_required
 def get_url_metadata():
     user = g.user
@@ -30,5 +34,20 @@ def get_url_metadata():
             result['type'] = 'rss'
             result['info'] = 'TODO'
             result['github repo'] = 'TODO'
-            result['config'] = {'type': 'int', 'attr_name': 'item_num', 'display_name': 'nums of item'}
+            result['schema'] = {
+                'properties': {
+                    'gryu': {
+                        'type': 'string',
+                        'description': 'gryu',
+                        'format': 'gryu'
+                    },
+                    'password': {
+                        'type': 'string',
+                        'description': 'Password'
+                    },
+                },
+                'required': ['gryu', 'password']
+            }
+        else:
+            raise UrlMetadataException('url_not_support')
         return result
