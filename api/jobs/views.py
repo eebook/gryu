@@ -156,6 +156,7 @@ def list_create_job_config():
         return to_return
     elif request.method == 'POST':
         data = request.json.copy()
+        data['created_by'] = user.username
         LOGGER.info('Create a job config with data: %s', data)
         _validate_resource(data)
 

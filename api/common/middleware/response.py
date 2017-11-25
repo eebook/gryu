@@ -65,7 +65,15 @@ def json_error_handler(app):
         :status_code: response status code
         :type: error type
         """
-        response = jsonify(error.to_dict())
+        response = jsonify({
+            "errors": [
+                {
+                    "code": error.code,
+                    "message": error.message,
+                    "source": error.source
+                }
+            ]
+        })
         response.status_code = error.status_code
         return response
 

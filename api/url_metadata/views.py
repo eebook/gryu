@@ -26,8 +26,7 @@ def get_url_metadata():
     if request.method == "POST":
         LOGGER.info('Get url metadata')
         data = request.json
-        result = UrlMetadataClient.get_url_metadata(data)
-        return result
+        return UrlMetadataClient.get_url_metadata(data)
 
 
 @url_metadata_bp.route('/sync', methods=['PUT'])
