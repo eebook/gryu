@@ -53,7 +53,8 @@ def list_create_book():
             {
                 'name': item.name,
                 'created_at': str(item.created_at),
-                'uuid': item.uuid
+                'uuid': item.uuid,
+                'public': item.is_public
             } for item in pagination_obj.items
         ]
         to_return = {

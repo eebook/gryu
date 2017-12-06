@@ -28,7 +28,7 @@ def update_user_password(_user_obj, _password):
     try:
         _user_obj.password = _password
         delete_num = EncryptedTokens.query.filter_by(user_id=_user_obj.id).delete()
-        LOGGER.debug('[Update password] Delete tokens of %s, deleted number: %s', _user_obj.username, delete_num)
+        LOGGER.info('[Update password] Delete tokens of %s, deleted number: %s', _user_obj.username, delete_num)
         _user_obj.updated_at = datetime.datetime.utcnow()
         db.session.add(_user_obj)
         db.session.commit()

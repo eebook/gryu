@@ -3,6 +3,7 @@
 
 import logging
 import datetime
+from flask import current_app
 
 from . import infra
 from ..common.exceptions import FieldValidateFailed
@@ -55,8 +56,18 @@ def create_user(user):
     user = infra.create_user(user)
     LOGGER.info("Successfully created user, user info: {}".format(user.to_dict(exclude=['_password'])))
     LOGGER.debug("User\'s activation key: {}".format(user.activationkeys))
-    # TODO: Send an email with an activation code
-    # post payload:
+    data = {
+        "email_type": "activate_user",
+        "recipient_list": [user.email, ],
+        "params": {
+            "username": user.username,
+            "eebook_url": current_app.config["LQBW_DOMAIN"],
+            "activation_url": current_app.config["LQBW_DOMAIN"] + 'user/activate/' + str(user.activationkeys)
+        }
+    }
+    LOGGER.info('Send activation keys for %s', user.username)
+    client = CourierClient()
+    client.email(data)
     return user.to_dict(exclude=['_password'])
 
 
@@ -114,7 +125,7 @@ def send_captcha_code(_data):
     client = CourierClient()
     data = {
         "email_type": "verify_code",
-        "recipient_list": ["knarfeh@outlook.com"],
+        "recipient_list": [email, ],
         "params": {
             "username": user.username,
             "captcha_code": captcha_code
