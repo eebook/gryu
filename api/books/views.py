@@ -87,7 +87,7 @@ def list_create_book():
 
 @books_bp.route('/detail/<regex("{}"):book_uuid>/'.format(UUID_REGEX), methods=["GET", "DELETE"])
 @json
-@token_auth.login_required
+# @token_auth.login_required
 def get_delete_book(book_uuid):
     if request.method == "GET":
         LOGGER.info('Get book, book id: %s', book_uuid)
@@ -96,12 +96,11 @@ def get_delete_book(book_uuid):
         book_result["result"]["is_public"] = book_res.is_public
         return book_result
     elif request.method == "DELETE":
-        # TODO, SearchClient should add this method, epub file should be deleted
         LOGGER.info('Delete book, book id: %s', book_uuid)
+        book_res = infra.get_resource_obj(None, None, None, _uuid=book_uuid)
+        infra.delete_resource(book_res)
+        # TODO, SearchClient should add this method, epub file should be deleted
         return {}, status.HTTP_204_NO_CONTENT
-    elif request.method == "PUT":
-        LOGGER.info('Change books permission')
-        return
 
 @books_bp.route('/detail/<regex("{}"):book_uuid>/'.format(UUID_REGEX), methods=["PUT"])
 @json

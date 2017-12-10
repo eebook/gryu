@@ -30,15 +30,6 @@ def ping():
     return "pong"
 
 
-@root_bp.route("/about", methods=["GET"])
-@json
-def about():
-    return {
-        "title": "Why ee-book.org exist",
-        "content": "TODO: about content",
-    }
-
-
 def create_app(config_name='dev'):
     app = Flask(__name__)
     app.wsgi_app = TestMiddleware(app.wsgi_app)
@@ -66,6 +57,9 @@ def create_app(config_name='dev'):
     # steal from https://stackoverflow.com/questions/5870188/does-flask-support-regular-expressions-in-its-url-routing
     app.url_map.converters['regex'] = RegexConverter
     app.register_blueprint(root_bp, url_prefix='/v1')
+
+    from .about import about_bp
+    app.register_blueprint(about_bp, url_prefix='/v1/about')
 
     from .users import users_bp, user_bp
     app.register_blueprint(users_bp, url_prefix='/v1/auth')

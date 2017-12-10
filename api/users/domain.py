@@ -86,6 +86,8 @@ def activate_user(activate_key):
         user = key.users
         if user.activate():
             key.delete()
+        return '', status.HTTP_204_NO_CONTENT
+    # return '', status.HTTP_404_NOT_FOUND
     return '', status.HTTP_204_NO_CONTENT
 
 
@@ -96,8 +98,9 @@ def generate_api_token(_user):
     email = _user.get('email', None)
     password = _user.get('password', None)
 
-    # user = _retrieve_user(_username=username, _email=email)
     user = _retrieve_user(_username=None, _email=email)
+    if user.is_active is False:
+        raise UserException('user_not_active', message_params=email)
     if user.verify_password(password):
         LOGGER.debug("verify user, user id: %s", user.id)
         # TODO: timed to let token expire

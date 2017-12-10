@@ -52,8 +52,7 @@ def activate(activation_key):
     """
     Activate user via uuid
     """
-    domain.activate_user(activation_key)
-    return '', status.HTTP_204_NO_CONTENT
+    return domain.activate_user(activation_key)
 
 
 @users_bp.route("/generate-api-token", methods=["POST"])
