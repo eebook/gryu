@@ -17,6 +17,7 @@ from ..resources import infra
 from ..resources.models import Resources
 from ..resources.exceptions import ResourcesException
 from .exceptions import JobsException
+from ..users.models import EncryptedTokens
 
 
 UUID_REGEX = '[a-fA-F0-9-_.]{36}'
@@ -52,15 +53,14 @@ def list_start_jobs():
         LOGGER.info('Start a job')
         data = request.json
         job_config_res = infra.get_resource_obj(data['config_name'], username, 'JOB_CONFIG')
-        # from ..users.views import generate_api_token
-        # TODO: to get token
+        user_token = EncryptedTokens.get_or_create(defaults=None, user_id=user.id)[0]
         LOGGER.info('request header: {}'.format(request.headers))
         # LOGGER.info('user token: {}'.format(token))
         # return
         start_job_data = {
             'config_uuid': job_config_res.uuid,
             'created_by': username,
-            'user_token': 'TODO: usertoken'
+            'user_token': user_token.key
         }
         result = JobClient.start_job(data=start_job_data)
         return result

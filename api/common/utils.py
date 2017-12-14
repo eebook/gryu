@@ -244,7 +244,6 @@ class DoRequest(object):
     def _parse_response(cls, response, target_source):
         from .exceptions import ServiceException
         code = response.status_code
-        LOGGER.debug('response status_code={}, content={}'.format(code, convert_to_unicode(response.content)))
 
         result = {
             'status_code': code,
