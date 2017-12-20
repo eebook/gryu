@@ -1,6 +1,12 @@
-### bitcoin
+### 加密货币地址
+
+#### btc
 
 1Aa8ZXPbzoyHGp9SmnWjSaNq56py3jCj96
+
+#### ada
+
+DdzFFzCqrhsrCe7b5113ra8ifVs64r6AmLKefzqgDxytw6k3Dw5XjKZLMAXsNPsnDfFSYPcWbj5TsFq4akDqV423TaC4d4xxLfptr6Y2
 
 或扫描二维码：
 
