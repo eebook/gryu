@@ -2,7 +2,7 @@ FROM python:3.6.0rc2-alpine
 LABEL maintainer="knarfeh@outlook.com"
 
 # base pkgs
-RUN apk --update add --no-cache openssl ca-certificates postgresql-dev
+RUN apk --update add --no-cache openssl ca-certificates postgresql-dev nginx supervisor
 
 # build pkgs
 RUN apk --update add gcc g++ python3-dev musl-dev make
@@ -17,3 +17,5 @@ RUN pip3 install -U pip \
 COPY . /src/
 
 WORKDIR /src
+CMD chmod u+x /src/run.sh
+CMD ["/src/run.sh"]
