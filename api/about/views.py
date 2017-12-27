@@ -17,6 +17,9 @@ LOGGER = logging.getLogger(__name__)
 @about_bp.route('/', methods=["GET"])
 @json
 def about():
+    """
+    Return about info in markdown format, TODO: add cache
+    """
     with open('/src/api/about/about.md', 'r') as f:
         content = f.read()
     return {
