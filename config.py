@@ -14,7 +14,7 @@ class Config:
     LOGCONFIG_QUEUE = ['eebook']
 
     DB_USER = os.getenv("DB_USER", 'postgres')
-    DB_PASSWORD = os.getenv("DB_PASSWORD", None)
+    DB_PASS = os.getenv("DB_PASS", None)
     DB_NAME = os.getenv("DB_NAME", "postgres")
     DB_HOST = os.getenv("DB_HOST", "db")
     DB_PORT = os.getenv("DB_PORT", 5432)
@@ -23,7 +23,7 @@ class Config:
                               format_map({
                                   'db_engine': DB_ENGINE,
                                   'user_name': DB_USER,
-                                  'password': DB_PASSWORD,
+                                  'password': DB_PASS,
                                   'hostname': DB_HOST,
                                   'database': DB_NAME
                               })
@@ -60,6 +60,20 @@ class DevelopmentConfig(Config):
 
 class TestingConfig(Config):
     TESTING = True
+    DB_USER = os.getenv("DB_USER", 'postgres')
+    DB_PASS = os.getenv("DB_PASS", None)
+    DB_NAME = os.getenv("gryu_test")
+    DB_HOST = os.getenv("DB_HOST", "db")
+    DB_PORT = os.getenv("DB_PORT", 5432)
+    DB_ENGINE = os.getenv("DB_ENGINE", "postgresql")
+    SQLALCHEMY_DATABASE_URI = '{db_engine}://{user_name}:{password}@{hostname}/{database}'.\
+                              format_map({
+                                  'db_engine': DB_ENGINE,
+                                  'user_name': DB_USER,
+                                  'password': DB_PASS,
+                                  'hostname': DB_HOST,
+                                  'database': DB_NAME
+                              })
 
 
 class ProductionConfig(Config):

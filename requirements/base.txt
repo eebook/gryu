@@ -13,3 +13,4 @@ Flask-HTTPAuth==3.2.3
 SQLAlchemy-Utils==0.32.14
 requests
 redis
+pyTelegramBotAPI

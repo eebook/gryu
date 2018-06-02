@@ -1,0 +1,14 @@
+version: '2'
+services:
+  db:
+    image: $POSTGRES_IMAGE
+    ports:
+        - 0.0.0.0:5432:5432
+    environment:
+      - DB_USER=postgres
+      - DB_NAME=gryu
+      - DB_PORT=5432
+    env_file:
+      - ./envs/secret.env
+    volumes:
+      - ./container-data/postgresql:/var/lib/postgresql

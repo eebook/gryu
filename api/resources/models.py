@@ -29,6 +29,7 @@ class Resources(BaseModel, ModelSerializerMixin):
     uuid = Column(String(36), unique=True, primary_key=True)
     type = Column(String(40), )
     is_public = Column(Boolean, default=False)
+    # TODO TOC term of Service
 
     users = relationship("Users", back_populates='resources')
 

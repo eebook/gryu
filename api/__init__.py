@@ -41,10 +41,6 @@ def create_app(config_name='dev'):
         if not content_type == 'application/json':
             raise APIException('invalid_content_type')
 
-    # TODO: Do you understand?
-    csrf = CSRFProtect()
-    csrf.init_app(app)
-
     # load default configuration
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
@@ -79,6 +75,9 @@ def create_app(config_name='dev'):
 
     from .url_metadata import url_metadata_bp
     app.register_blueprint(url_metadata_bp, url_prefix='/v1/url_metadata')
+
+    from .tg_bot import tg_bot_bp
+    app.register_blueprint(tg_bot_bp, url_prefix='/tg_bot')
 
     app.response_class = response.JSONResponse
     response.json_error_handler(app=app)

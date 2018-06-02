@@ -21,12 +21,6 @@ migrate = Migrate(app, db)
 manager.add_command('db', MigrateCommand)
 
 
-@manager.command
-def create_db(drop_first=False):
-    """Creates the database."""
-    if drop_first:
-        db.drop_all()
-    db.create_all()
 
 if __name__ == "__main__":
     manager.run()
