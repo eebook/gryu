@@ -12,8 +12,6 @@ services:
     entrypoint: [sh]
     volumes:
       - .:/src
-    depends_on:
-      - db
     tty: true
     ports:
       - "$GRYU_API_PORT:80"
@@ -22,7 +20,10 @@ services:
       - envs/secrets.env
     environment:
       - ENV="development"
-      - HTTP_PROXY="http://192.168.199.121:1087"
+      # - HTTP_PROXY="http://192.168.199.121:1087"
+      - DB_HOST=192.168.199.121
+      - DB_USER=knarfeh
+      - HLGD_ENDPOINT=http://192.168.199.121:18089
   db:
     image: $POSTGRES_IMAGE
     ports:

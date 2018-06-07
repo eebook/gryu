@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import telebot
 import os
-from api.users.models import Users
+import logging
+import telebot
+from telebot.util import extract_arguments
+from api.users.models import Users, EncryptedTokens
+from api.common.clients import UrlMetadataClient
 from sqlalchemy import create_engine, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -30,6 +33,8 @@ engine = create_engine(SQLALCHEMY_DATABASE_URI)
 Session.configure(bind=engine)
 session = Session()
 
+LOGGER = logging.getLogger(__name__)
+
 
 def get_user(message):
     """
@@ -38,17 +43,39 @@ def get_user(message):
     user = session.query(Users).filter(Users.username==message.from_user.username+"-tg").first()
     # user = Users.query.filter_by(username="test").first()
     if not user:
-        print("user not exist, creating")
+        print("user {} not exist, creating".format(message.from_user.username))
         chat_id = message.chat.id
         name = message.text
         print("chat_id: {}, name: {}".format(chat_id, name))
         username = message.from_user.username + "-tg"
-        email = "tg_user@eebook.com"
+        email = "tg_user_{}@eebook.com".format(username)
+        # TODO: write password with env
         user = Users(username=username, email=email, password="nopassword", is_active=True)
-        # TODO: add token
         session.add(user)
         session.commit()
     return user
+
+def get_url_info_result(info):
+    if info["schema"] is not None:
+        env_dict = info["schema"].get("properties", {})
+    else:
+        env_dict = dict()
+
+    variable_str = "\n"
+    for key in env_dict.keys():
+        default = env_dict[key].get("default", "REQUIRED")
+        variable_str = variable_str + key + " " + str(default) + "\n"
+    result = """
+🎉🎉🎉 Yes, you can submit this url
+
+Name: {}
+Description: {}
+Repository: {}
+Variables:
+{}
+
+    """.format(info["name"], info["info"], info["repo"], variable_str)
+    return result
 
 @bot.message_handler(commands=["start", "help"])
 def send_welcome(message):
@@ -56,9 +83,7 @@ def send_welcome(message):
     user = get_user(message)
     if not user:
         print("user not exist")
-    bot.reply_to(message,
-                 ("Hi there, I am EchoBot.\n"
-                  "I am here to echo your kind words back to you."))
+    bot.reply_to(message, "Hello there")
 
 @bot.message_handler(commands=["submit"])
 def submit_url(message):
@@ -74,18 +99,34 @@ def get_url_info(message):
     """
     /url_info http://baidu.com
     """
-    print("get url info, message: {}".format(message))
-    bot.reply_to(message, "test submit")
+    from api.common.exceptions import ServiceException
+    url = extract_arguments(message.text)
+    print("get url info, url: {}".format(url))
+    data = {
+        "url": url
+    }
+    try:
+        url_metadata = UrlMetadataClient.get_url_metadata(data)
+        response_str = get_url_info_result(url_metadata)
+    except ServiceException as s:
+        if s.code == "url_not_support":
+            # TODO: recommand similar url
+            response_str = "Url not supported"
+        else:
+            response_str = "Something wrong, please contact @knarfeh"
+
+    bot.reply_to(message, response_str)
 
 
 @bot.message_handler(commands=["supported"])
 def supported_url(message):
     """
     Get supported url
+    Need improvement
     /supported
     """
     print("get supported url, message: {}".format(message))
-    bot.reply_to(message, "test submit")
+    bot.reply_to(message, "https://eebook.github.io/catalog/")
 
 
 @bot.message_handler(commands=["list"])
@@ -127,6 +168,14 @@ def get_resource(message):
     /detail config
     /detail job
     /detail book
+    """
+    pass
+
+@bot.message_handler(commands=["run"])
+def run_job(message):
+    """
+    run job with job config or job id
+    /run job_config or job_uuid
     """
     pass
 
