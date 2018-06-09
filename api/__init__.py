@@ -15,6 +15,7 @@ from .common.utils import json, RegexConverter
 from .common.middleware import response
 from .common.exceptions import APIException
 from .common.database import db
+
 # Import models so that they are registered with SQLAlchemy
 from api.users.models import Users, ActivationKeys, EncryptedTokens      # noqa
 from api.resources.models import Resources  # noqa

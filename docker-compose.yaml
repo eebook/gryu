@@ -24,6 +24,7 @@ services:
       - DB_HOST=192.168.199.121
       - DB_USER=knarfeh
       - HLGD_ENDPOINT=http://192.168.199.121:18089
+      - CCCC_ENDPOINT=http://192.168.199.121:18085
   db:
     image: $POSTGRES_IMAGE
     ports:

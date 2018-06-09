@@ -126,7 +126,6 @@ def schema(path=None):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            print(request.data is not None)
             if request.data is not None and request.data != b'':
                 _path = path.lstrip('/')
                 schema_path = os.path.join(SCHEMA_PATH, request.blueprint, _path)

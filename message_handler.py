@@ -11,8 +11,9 @@ from sqlalchemy import create_engine, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
-bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN"), None)
+from api.common.exceptions import ServiceException
 
+bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN"), None)
 DB_USER = os.getenv("DB_USER", 'postgres')
 DB_PASS = os.getenv("DB_PASS", None)
 DB_NAME = os.getenv("DB_NAME", "postgres")
@@ -90,7 +91,47 @@ def submit_url(message):
     """
     /submit http://baidu.com
     """
-    print("submit url, message: {}".format(message))
+    # http://wiki.jikexueyuan.com/project/explore-python/Standard-Modules/hashlib.html
+    submit_str = extract_arguments(message.text.strip())
+    if submit_str == "":
+        bot.reply_to(message, "Please input an url, like /submit http://baidu.com")
+        return
+    args = submit_str.split(" ")
+    url_metadata_payload = { "url": args[0] }
+    try:
+        url_metadata = UrlMetadataClient.get_url_metadata(url_metadata_payload)
+        print("url_metadata??? {}".format(url_metadata))
+    except ServiceException as s:
+        if s.code == "url_not_support":
+            # TODO: recommend similar url
+            response_str = "Url not supported"
+        else:
+            response_str = "Something wrong, please contact @knarfeh"
+        bot.reply_to(message, response_str)
+        return
+    print(url_metadata)
+    submit_env = args[1::2]
+    print("submit_env: {}".format(submit_env))
+    if url_metadata["schema"] is not None:
+        required_env_list = url_metadata["schema"].get("required", [])
+    else:
+        required_env_list = list()
+    print("required_env_list: {}".format(required_env_list))
+    missed_env = [item for item in required_env_list if item not in submit_env]
+    if len(missed_env) > 0:
+        bot.reply_to(message, ", ".join(missed_env) + " is required")
+        return
+    job_config_payload = {
+        "config_name": "TODO",
+        "image_name": url_metadata["image"],
+        "envvars": [{
+            "name": "URL",
+            "value": args[0],
+        },{
+
+        }]
+    }
+
     bot.reply_to(message, "test submit")
 
 
@@ -99,18 +140,18 @@ def get_url_info(message):
     """
     /url_info http://baidu.com
     """
-    from api.common.exceptions import ServiceException
-    url = extract_arguments(message.text)
+    url = extract_arguments(message.text.strip())
     print("get url info, url: {}".format(url))
-    data = {
-        "url": url
-    }
+    if url == "":
+        bot.reply_to(message, "Please input an url, like /url_info http://baidu.com")
+        return
+    data = { "url": args[0] }
     try:
         url_metadata = UrlMetadataClient.get_url_metadata(data)
         response_str = get_url_info_result(url_metadata)
     except ServiceException as s:
         if s.code == "url_not_support":
-            # TODO: recommand similar url
+            # TODO: recommend similar url
             response_str = "Url not supported"
         else:
             response_str = "Something wrong, please contact @knarfeh"

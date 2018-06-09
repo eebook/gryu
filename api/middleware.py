@@ -10,11 +10,11 @@ class TestMiddleware(object):
 
     def __call__(self, environ, start_response):
         # How do I access request object here.
-        print("Im in middleware")
+        # print("Im in middleware")
         # with self.request_context(environ):
         # try:
         #     response = self.full_dispatch_request()
         # except Exception as e:
         #     response = make_response("asdfsdf")
-        print("__file__???" + os.path.dirname(__file__))
+        # print("__file__???" + os.path.dirname(__file__))
         return self.app(environ, start_response)
