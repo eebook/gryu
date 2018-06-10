@@ -4,14 +4,18 @@
 import os
 import logging
 import telebot
+import hashlib
+
 from telebot.util import extract_arguments
-from api.users.models import Users, EncryptedTokens
-from api.common.clients import UrlMetadataClient
-from sqlalchemy import create_engine, func
+from sqlalchemy import create_engine, func, exc
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
 from api.common.exceptions import ServiceException
+from api.jobs.clients import JobClient
+from api.resources.models import Resources
+from api.users.models import Users, EncryptedTokens
+from api.common.clients import UrlMetadataClient
 
 bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN"), None)
 DB_USER = os.getenv("DB_USER", 'postgres')
@@ -96,7 +100,10 @@ def submit_url(message):
     if submit_str == "":
         bot.reply_to(message, "Please input an url, like /submit http://baidu.com")
         return
+
     args = submit_str.split(" ")
+    if len(args)%2 == 0:
+        args.append(" ")
     url_metadata_payload = { "url": args[0] }
     try:
         url_metadata = UrlMetadataClient.get_url_metadata(url_metadata_payload)
@@ -110,29 +117,62 @@ def submit_url(message):
         bot.reply_to(message, response_str)
         return
     print(url_metadata)
-    submit_env = args[1::2]
-    print("submit_env: {}".format(submit_env))
+    submit_env_dict = dict(zip(args[1::2], args[2::2]))
+    print("submit_env_dict: {}".format(submit_env_dict))
+
     if url_metadata["schema"] is not None:
         required_env_list = url_metadata["schema"].get("required", [])
     else:
         required_env_list = list()
     print("required_env_list: {}".format(required_env_list))
-    missed_env = [item for item in required_env_list if item not in submit_env]
+    missed_env = [item for item in required_env_list if item not in submit_env_dict.keys()]
     if len(missed_env) > 0:
         bot.reply_to(message, ", ".join(missed_env) + " is required")
         return
+    config_name = hashlib.md5((submit_str+message.from_user.username+"-tg").encode('utf-8')).hexdigest()
+    print("config_name???{}".format(config_name))
+
+    envvars = [{"name": k, "value": v} for k, v in submit_env_dict.items()]
+    envvars.append({"name": "URL", "value": args[0]})
+    print("envvars???{}".format(envvars))
+
     job_config_payload = {
-        "config_name": "TODO",
+        "config_name": config_name,
         "image_name": url_metadata["image"],
-        "envvars": [{
-            "name": "URL",
-            "value": args[0],
-        },{
-
-        }]
+        "created_by": message.from_user.username+"-tg",
+        "envvars": envvars
     }
+    print("job_config_payload: {}".format(job_config_payload))
+    config = JobClient.create_job_configs(data=job_config_payload)
+    print("returned config: {}".format(config))
 
-    bot.reply_to(message, "test submit")
+    try:
+        resource = Resources(name=config_name, type="JOB_CONFIG", created_by=message.from_user.username+"-tg", uuid=config["config_uuid"])
+        session.add(resource)
+        session.commit()
+    except exc.IntegrityError as e:
+        session.rollback()
+        JobClient.delete_job_configs(config_uuid=config['config_uuid'])
+        bot.reply_to(message, "Already exist, please try\n /run {} \n，input /configs see exist job config".format(config_name))
+        return
+    except Exception as e:
+        print('Got unknown error: {}'.format(e.message))
+        session.rollback()
+        JobClient.delete_job_configs(config_uuid=config['config_uuid'])
+        bot.reply_to(message, "Unknown error, please contact @knarfeh")
+        return
+    # user = Users.query.filter(username==message.from_user.username+"-tg")[0]
+    user = session.query(Users).filter(Users.username==message.from_user.username+"-tg")[0]
+    # token_obj = EncryptedTokens.query.filter(user_id==user.id)[0]
+    token_obj = session.query(EncryptedTokens).filter(EncryptedTokens.user_id==user.id)[0]
+    start_job_data = {
+        'config_uuid': config["config_uuid"],
+        'created_by': user.username,
+        'user_token': token_obj.key
+    }
+    result = JobClient.start_job(data=start_job_data)
+    print("TODO: print logs")
+    bot.reply_to(message, "Working on it!")
 
 
 @bot.message_handler(commands=["url_info"])
@@ -174,12 +214,32 @@ def supported_url(message):
 def list_resource(message):
     """
     Get a list of job config, job, books
+    /list
     /list config
-    /list job
+    /list config config_name list job of config_name
+
+    /list job list all jobs
+    /list jobs list all jobs
+
     /list book
+    /list books
     """
-    print("get supported url, message: {}".format(message))
-    bot.reply_to(message, "test submit")
+    submit_str = extract_arguments(message.text.strip())
+    if submit_str == "":
+        print("message???{}".format(message))
+        bot.reply_to(message, "return configs and books")
+        return
+    args = submit_str.split(" ")
+    if args[0] == "config":
+        bot.reply_to(message, "list configs")
+        return
+    elif args[0] == "jobs" or args[0] == "job":
+        bot.reply_to(message, "list jobs")
+        return
+    elif args[0] == "books" or args[0] == "book":
+        bot.reply_to(message, "list books")
+        return
+    bot.reply_to(message, "test list")
 
 @bot.message_handler(commands=["edit update"])
 def update_resource(message):

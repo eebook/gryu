@@ -18,6 +18,7 @@ def create_resource(resource):
         db.session.commit()
     except Exception as e:
         LOGGER.error('Creating resource, got error, traceback: %s', e)
+        db.session.rollback()
         raise ResourcesException(code='unknown_issue')
     return resource
 
