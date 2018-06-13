@@ -71,7 +71,8 @@ def get_url_info_result(info):
         default = env_dict[key].get("default", "REQUIRED")
         variable_str = variable_str + key + " " + str(default) + "\n"
     result = """
-🎉🎉🎉 Yes, you can submit this url
+🎉🎉🎉
+Yes, you can submit this url
 
 Name: {}
 Description: {}
@@ -80,6 +81,24 @@ Variables:
 {}
 
     """.format(info["name"], info["info"], info["repo"], variable_str)
+    return result
+
+def get_list_job_config_result(resources_obj):
+    if len(resources_obj) != 0:
+        result = """
+🎉🎉🎉
+Your job configs:
+
+"""
+    else:
+        result = """
+Sorry, you don't have any job config
+        """
+    for resource in resources_obj:
+        print("resource: {}, ".format(resource.name))
+        line = str(resource.name) + "\n"
+        result = result + line
+    result = result + "\n Try /detail {{config}} to get the detail"
     return result
 
 @bot.message_handler(commands=["start", "help"])
@@ -225,13 +244,24 @@ def list_resource(message):
     /list books
     """
     submit_str = extract_arguments(message.text.strip())
-    if submit_str == "":
+    username = message.from_user.username+"-tg"
+    def list_config():
         print("message???{}".format(message))
-        bot.reply_to(message, "return configs and books")
+        page = 1
+        page_size = 3
+        # pagination_obj = session.query(Resources).filter(Resources.created_by==username).paginate(page, page_size, error_out=True)
+        # no pagination in sqlalchemy???
+        pagination_obj = session.query(Resources).filter(Resources.created_by==username).all()
+        print(pagination_obj)
+        result = get_list_job_config_result(pagination_obj)
+        bot.reply_to(message, result)
+
+    if submit_str == "":
+        list_config()
         return
     args = submit_str.split(" ")
     if args[0] == "config":
-        bot.reply_to(message, "list configs")
+        list_config()
         return
     elif args[0] == "jobs" or args[0] == "job":
         bot.reply_to(message, "list jobs")

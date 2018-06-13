@@ -174,7 +174,6 @@ def list_create_job_config():
         except Exception as e:
             LOGGER.error('Got unknow error: %s', e.message)
             JobClient.delete_job_configs(config_uuid=config['config_uuid'])
-
         return config, status.HTTP_201_CREATED
 
 
