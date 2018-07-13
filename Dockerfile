@@ -13,7 +13,8 @@ RUN apk add curl
 COPY requirements /requirements
 RUN mkdir -p /var/log/eebook
 RUN pip3 install -U pip \
-    && pip install -i https://pypi.douban.com/simple -r requirements/dev.txt
+    && pip install -i https://pypi.douban.com/simple -r requirements/dev.txt \
+    && pip install gunicorn==19.6.0
 COPY . /src/
 
 WORKDIR /src

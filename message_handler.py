@@ -54,7 +54,7 @@ def get_user(message):
         print("chat_id: {}, name: {}".format(chat_id, name))
         username = message.from_user.username + "-tg"
         email = "tg_user_{}@eebook.com".format(username)
-        # TODO: write password with env
+        # TODO: write password with env !!!
         user = Users(username=username, email=email, password="nopassword", is_active=True)
         session.add(user)
         session.commit()
@@ -289,7 +289,8 @@ def delete_resource(message):
     /delete job
     /delete book
     """
-    pass
+    submit_str = extract_arguments(message.text.strip())
+    return
 
 
 @bot.message_handler(commands=["detail, get"])

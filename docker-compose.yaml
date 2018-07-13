@@ -21,10 +21,12 @@ services:
     environment:
       - ENV="development"
       # - HTTP_PROXY="http://192.168.199.121:1087"
-      - DB_HOST=192.168.199.121
+      # - DB_HOST=192.168.199.121
       - DB_USER=knarfeh
       - HLGD_ENDPOINT=http://192.168.199.121:18089
       - CCCC_ENDPOINT=http://192.168.199.121:18085
+    networks:
+      - devbox
   db:
     image: $POSTGRES_IMAGE
     ports:
@@ -34,3 +36,7 @@ services:
       - envs/secrets.env
     volumes:
       - ./container-data/postgresql:/var/lib/postgresql
+networks:
+  devbox:
+    external:
+      name: devbox_devbox
