@@ -19,13 +19,14 @@ class Config:
     DB_HOST = os.getenv("DB_HOST", "db")
     DB_PORT = os.getenv("DB_PORT", 5432)
     DB_ENGINE = os.getenv("DB_ENGINE", "postgresql")
-    SQLALCHEMY_DATABASE_URI = '{db_engine}://{user_name}:{password}@{hostname}/{database}'.\
+    SQLALCHEMY_DATABASE_URI = '{db_engine}://{user_name}:{password}@{hostname}:{port}/{database}'.\
                               format_map({
                                   'db_engine': DB_ENGINE,
                                   'user_name': DB_USER,
                                   'password': DB_PASS,
                                   'hostname': DB_HOST,
-                                  'database': DB_NAME
+                                  'database': DB_NAME,
+                                  'port': DB_PORT,
                               })
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     SECRET_KEY = os.getenv('SECRET_KEY', '1a62be118cd66c49c4070af5e6f6bd46cb679b38')
@@ -66,13 +67,14 @@ class TestingConfig(Config):
     DB_HOST = os.getenv("DB_HOST", "db")
     DB_PORT = os.getenv("DB_PORT", 5432)
     DB_ENGINE = os.getenv("DB_ENGINE", "postgresql")
-    SQLALCHEMY_DATABASE_URI = '{db_engine}://{user_name}:{password}@{hostname}/{database}'.\
+    SQLALCHEMY_DATABASE_URI = '{db_engine}://{user_name}:{password}@{hostname}:{port}/{database}'.\
                               format_map({
                                   'db_engine': DB_ENGINE,
                                   'user_name': DB_USER,
                                   'password': DB_PASS,
                                   'hostname': DB_HOST,
-                                  'database': DB_NAME
+                                  'database': DB_NAME,
+                                  'port': DB_PORT,
                               })
 
 
