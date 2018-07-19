@@ -41,25 +41,6 @@ session = Session()
 LOGGER = logging.getLogger(__name__)
 
 
-def get_user(message):
-    """
-    if not exist, create user
-    """
-    user = session.query(Users).filter(Users.username==message.from_user.username+"-tg").first()
-    # user = Users.query.filter_by(username="test").first()
-    if not user:
-        print("user {} not exist, creating".format(message.from_user.username))
-        chat_id = message.chat.id
-        name = message.text
-        print("chat_id: {}, name: {}".format(chat_id, name))
-        username = message.from_user.username + "-tg"
-        email = "tg_user_{}@eebook.com".format(username)
-        # TODO: write password with env !!!
-        user = Users(username=username, email=email, password="nopassword", is_active=True)
-        session.add(user)
-        session.commit()
-    return user
-
 def get_url_info_result(info):
     if info["schema"] is not None:
         env_dict = info["schema"].get("properties", {})
@@ -100,14 +81,6 @@ Sorry, you don't have any job config
         result = result + line
     result = result + "\n Try /detail {{config}} to get the detail"
     return result
-
-@bot.message_handler(commands=["start", "help"])
-def send_welcome(message):
-    print("message: {}".format(message))
-    user = get_user(message)
-    if not user:
-        print("user not exist")
-    bot.reply_to(message, "Hello there")
 
 @bot.message_handler(commands=["submit"])
 def submit_url(message):
@@ -271,103 +244,3 @@ def list_resource(message):
         return
     bot.reply_to(message, "test list")
 
-@bot.message_handler(commands=["edit update"])
-def update_resource(message):
-    """
-    edit job config, book
-    /edit config
-    /edit book
-    """
-    print("get supported url, message: {}".format(message))
-
-
-@bot.message_handler(commands=["delete"])
-def delete_resource(message):
-    """
-    Delete a resource
-    /delete config
-    /delete job
-    /delete book
-    """
-    submit_str = extract_arguments(message.text.strip())
-    return
-
-
-@bot.message_handler(commands=["detail, get"])
-def get_resource(message):
-    """
-    get details of a resource
-    /detail config
-    /detail job
-    /detail book
-    """
-    pass
-
-@bot.message_handler(commands=["run"])
-def run_job(message):
-    """
-    run job with job config or job id
-    /run job_config or job_uuid
-    """
-    pass
-
-
-@bot.message_handler(commands=["logs"])
-def job_logs(message):
-    """
-    get logs of a job
-    /logs                   get logs of latest job
-    /logs job_uuid          get logs of a job
-    /logs 20                get 20 log of latest job
-    /logs job_uuid 20       get 20 logs of a specific job
-    """
-    pass
-
-
-@bot.message_handler(commands=["report"])
-def report_issue(message):
-    """
-    report an issue
-    /report url  report url git repo, git issue
-    /report contact @knarfeh
-    """
-    pass
-
-
-@bot.message_handler(commands=["search"])
-def donate(message):
-    """
-    search books
-    """
-    pass
-
-
-@bot.message_handler(commands=["settings"])
-def donate(message):
-    """
-    settings, including language, search feature(本站搜索，全网搜索)
-    """
-    pass
-
-
-
-@bot.message_handler(commands=["kindle"])
-def kindle(message):
-    """
-    kindle
-    """
-    pass
-
-
-@bot.message_handler(commands=["donate"])
-def donate(message):
-    """
-    """
-    pass
-
-
-
-if __name__ == "__main__":
-    from telebot import apihelper
-    apihelper.proxy = {'http':'http://0.0.0.0:1087'}
-    bot.polling()

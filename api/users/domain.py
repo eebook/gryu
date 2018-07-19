@@ -91,7 +91,7 @@ def activate_user(activate_key):
     return '', status.HTTP_204_NO_CONTENT
 
 
-def generate_api_token(_user):
+def generate_api_token(_user, need_user_active=True):
     # Check out whether the user has been activated, TODO: use serializer
     # TODO: active_tmp_password_users
     # username = _user.get('username', None)
@@ -99,7 +99,7 @@ def generate_api_token(_user):
     password = _user.get('password', None)
 
     user = _retrieve_user(_username=None, _email=email)
-    if user.is_active is False:
+    if user.is_active is False and need_user_active is True:
         raise UserException('user_not_active', message_params=email)
     if user.verify_password(password):
         LOGGER.debug("verify user, user id: %s", user.id)

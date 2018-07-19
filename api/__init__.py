@@ -48,8 +48,6 @@ def create_app(config_name='dev'):
     logcfg = LogConfig(app)
     logcfg.init_app(app)
 
-    db.init_app(app)
-
     # Support regular expression,
     # steal from https://stackoverflow.com/questions/5870188/does-flask-support-regular-expressions-in-its-url-routing
     app.url_map.converters['regex'] = RegexConverter
@@ -82,5 +80,7 @@ def create_app(config_name='dev'):
 
     app.response_class = response.JSONResponse
     response.json_error_handler(app=app)
+
+    db.init_app(app)
 
     return app

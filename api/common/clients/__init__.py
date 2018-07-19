@@ -38,6 +38,12 @@ class HlgdRequest(DoRequest):
     headers = GRYU_HEADERS
     target_source = os.getenv('HLGD_SOURCE', 18089)
 
+class GryuRequest(DoRequest):
+
+    endpoint = "http://localhost:80/v1"
+
+    target_source = 18083
+
 
 class CourierClient(object):
 
@@ -57,3 +63,17 @@ class UrlMetadataClient(object):
     def sync_repo_metadata(cls):
         return HlgdRequest.send('url_metadata/sync', method='PUT')['data']
 
+
+class EEBookClient(object):
+    def __init__(self, token):
+        self._token = token
+        self.headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'User-Agent': 'gryu/v1.0',
+            'Authorization': "token {}".format(self._token)
+        }
+
+    def get_job_config_list(self, _data):
+        result = GryuRequest.send("job_configs?page_size=13&page=1", headers=self.headers)
+        return result

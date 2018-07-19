@@ -21,10 +21,13 @@ services:
     environment:
       - ENV="development"
       # - HTTP_PROXY="http://192.168.199.121:1087"
+      # - http_proxy="http://192.168.199.121:1087"
       # - DB_HOST=192.168.199.121
       - DB_USER=knarfeh
       - HLGD_ENDPOINT=http://192.168.199.121:18089
       - CCCC_ENDPOINT=http://192.168.199.121:18085
+      - REDIS_HOST=192.168.199.121
+      - REDIS_PORT=16379
     networks:
       - devbox
   db:
