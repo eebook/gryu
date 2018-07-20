@@ -74,6 +74,28 @@ class EEBookClient(object):
             'Authorization': "token {}".format(self._token)
         }
 
-    def get_job_config_list(self, _data):
-        result = GryuRequest.send("job_configs?page_size=13&page=1", headers=self.headers)
+    def get_job_config_list(self, page_size, page):
+        result = GryuRequest.send("job_configs?page_size={}&page={}".format(page_size, page), headers=self.headers)['data']
+        return result
+
+    def create_job_config(self, _data):
+        result = GryuRequest.send("job_configs/", method='POST', data=_data, headers=self.headers)['data']
+        LOGGER.info('Create job config, result: {}'.format(result))
+        return result
+
+    def start_job(self, _data):
+        result = GryuRequest.send('jobs/', method='POST', data=_data, headers=self.headers)['data']
+        LOGGER.info("Start job, result: {}".format(result))
+        return result
+
+    def get_job_list(self, page_size, page, job_config_name=None):
+        query_str = "jobs?page_size={}&page={}".format(page_size, page)
+        if job_config_name is not None:
+            query_str = query_str + "&config_name={}".format(job_config_name)
+        result = GryuRequest.send(query_str, method='POST', headers=self.headers)['data']
+        return result
+
+    def get_books_list(self, page_size, page):
+        query_str = "books?page_size={}&page={}".format(page_size, page)
+        result = GryuRequest.send(query_str, method='POST', headers=self.headers)['data']
         return result
