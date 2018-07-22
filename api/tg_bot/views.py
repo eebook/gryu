@@ -26,11 +26,6 @@ from ..common.exceptions import ServiceException
 
 redis_cache = RedisCache()
 
-
-# apihelper.proxy = {'http':'http://192.168.199.121:1087'}
-# apihelper.proxy = {'https':'http://192.168.199.121:1087'}
-# apihelper.proxy = {'https':'socks5://192.168.199.121:1086'}
-
 LOGGER = logging.getLogger(__name__)
 bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN", None))
 # bot.set_webhook(url=os.getenv("TG_WEBHOOK_URL", "https://gryuint.nujeh.com/tg_bot/webhook"))
@@ -48,6 +43,11 @@ def bot_webhook():
         redis_cache.writer.set("eebook-gryu-"+user.username, token)
         redis_cache.writer.expire("eebook-gryu-"+user.username, 3600)
         return {}
+
+@tg_bot_bp.route('/send_book', methods=['POST'])
+@json
+def send_book():
+    return {}
 
 def get_user(message):
     """
@@ -71,8 +71,7 @@ def get_user(message):
         token = generate_api_token(user_dict, need_user_active=False)['token']
         redis_cache.writer.set("eebook-gryu-"+username, token)
         redis_cache.writer.expire("eebook-gryu-"+username, 3600)
-    else:
-        token = EncryptedTokens.get_or_create(defaults=None, user_id=user.id)[0].key
+    token = EncryptedTokens.get_or_create(defaults=None, user_id=user.id)[0].key
     return user, token
 
 
@@ -104,7 +103,7 @@ def submit_url(message):
             response_str = "Url not supported"
         else:
             response_str = "Something wrong, please contact @knarfeh"
-        # bot.reply_to(message, response_str)
+        bot.reply_to(message, response_str)
         return
 
     submit_env_dict = dict(zip(args[1::2], args[2::2]))
@@ -118,12 +117,13 @@ def submit_url(message):
 
     missed_env = [item for item in required_env_list if item not in submit_env_dict.keys()]
     if len(missed_env) > 0:
-        # bot.reply_to(message, ", ".join(missed_env) + " is required")
+        bot.reply_to(message, ", ".join(missed_env) + " is required")
         return
     config_name = hashlib.md5((submit_str+message.from_user.username+"-tg").encode('utf-8')).hexdigest()
     LOGGER.info("config_name: {}".format(config_name))
     envvars = [{"name": k, "value": v} for k, v in submit_env_dict.items()]
     envvars.append({"name": "URL", "value": args[0]})
+    envvars.append({"name": "ES_INDEX", "value": url_metadata["name"]})
     job_config_payload = {
         "config_name": config_name,
         "image_name": url_metadata["image"],
@@ -135,22 +135,24 @@ def submit_url(message):
         EEBookClient(token).create_job_config(job_config_payload)
     except ServiceException as e:
         if e.code == "job_config_name_conflict":
-            response_str = "Already exist, please try\n /run {} \n，input /configs see exist job config".format(config_name)
+            response_str = "Already exist, please try\n /run {} \n，input /configs see existing job config".format(config_name)
         else:
             response_str = "Something wrong, please contact @knarfeh"
-        # bot.reply_to(message, response_str)
+        LOGGER.info("Response string: {}".format(response_str))
+        bot.reply_to(message, response_str)
         return
     start_job_payload = {
         "config_name": config_name
     }
     try:
         EEBookClient(token).start_job(start_job_payload)
+        response_str = "Working on it!"
     except ServiceException as e:
         if e.code == "unknown_issue":
             response_str = "Something wrong, please contact @knarfeh"
-        # bot.reply_to(message, response_str)
-        return
-    # bot.reply_to(message, "Working on it!")
+    LOGGER.info("Response string: {}".format(response_str))
+    bot.reply_to(message, response_str)
+    return
 
 @bot.message_handler(commands=["url_info"])
 def get_url_info(message):
@@ -172,8 +174,8 @@ def get_url_info(message):
             response_str = "Url not supported"
         else:
             response_str = "Something wrong, please contact @knarfeh"
+    LOGGER.info("Response string: {}".format(response_str))
     # bot.reply_to(message, response_str)
-    LOGGER.info("response_str: {}".format(response_str))
 
 
 @bot.message_handler(commands=["list"])
@@ -200,15 +202,15 @@ def list_resource(message):
         LOGGER.info("List configs")
         job_config_result = EEBookClient(token).get_job_config_list(10, 1)
         result = get_list_job_config_result(job_config_result)
-        # bot.reply_to(message, result)
+        bot.reply_to(message, result)
         return
     elif args[0] == "jobs" or args[0] == "job":
         LOGGER.info("list jobs")
-        # bot.reply_to(message, "list jobs")
+        bot.reply_to(message, "list jobs")
         return
     elif args[0] == "books" or args[0] == "book":
         LOGGER.info("list books")
-        # bot.reply_to(message, "list books")
+        bot.reply_to(message, "list books")
         return
 
     bot.reply_to(message, "test list")
@@ -221,7 +223,8 @@ def update_resource(message):
     /edit config
     /edit book
     """
-    print("get supported url, message: {}".format(message))
+    LOGGER.info("TODO")
+    return
 
 
 
@@ -240,13 +243,33 @@ def delete_resource(message):
     if len(args) < 2:
         LOGGER.info("Please specify a name to delete")
     token = redis_cache.writer.get("eebook-gryu-" + message.from_user.username + "-tg")
-    LOGGER.info("TODO")
+    LOGGER.info("token???{}".format(token))
 
     if args[0] == "config":
-        LOGGER.info("Delete config")
+        LOGGER.info("Delete config {}".format(args[1]))
+        try:
+            EEBookClient(token).delete_job_config(args[1])
+            response_str = "Successfully deleted config {}".format(args[1])
+        except ServiceException as s:
+            if s.code == "resource_not_exist":
+                response_str = "Ops, job config not exist"
+            else:
+                response_str = "Something wrong, please contact @knarfeh"
+        LOGGER.info("Response str: {}".format(response_str))
+        bot.reply_to(message, response_str)
         return
     elif args[0] == "job" or args[0] == "jobs":
-        LOGGER.info("Delete job")
+        LOGGER.info("Delete job {}".format(args[1]))
+        try:
+            EEBookClient(token).delete_job(args[1])
+            response_str = "Successfully deleted config {}".format(args[1])
+        except ServiceException as s:
+            if s.code == "resource_not_exist":
+                response_str = "Ops, job {} not exist".format(args[1])
+            else:
+                response_str = "Something wrong, please contact @knarfeh"
+        LOGGER.info("Response str: {}".format(response_str))
+        bot.reply_to(message, response_str)
         return
     elif args[0] == "books" or args[0] == "book":
         LOGGER.info("Delete book")
@@ -340,6 +363,10 @@ def donate(message):
     """
     """
     pass
+
+# knarfeh's commands
+## sync repo
+## get token
 
 def get_url_info_result(info):
     if info["schema"] is not None:

@@ -83,10 +83,27 @@ class EEBookClient(object):
         LOGGER.info('Create job config, result: {}'.format(result))
         return result
 
+    def get_job_config_detail(self, config_name):
+        result = GryuRequest.send("job_configs/{}/".format(config_name), method='GET', headers=self.headers)['data']
+        LOGGER.info('Create job config, result: {}'.format(result))
+        return result
+
+
+    def delete_job_config(self, config_name):
+        LOGGER.info("Delete {}".format(config_name))
+        result = GryuRequest.send("job_configs/{}/".format(config_name), method='DELETE', headers=self.headers)['data']
+        return result
+
     def start_job(self, _data):
         result = GryuRequest.send('jobs/', method='POST', data=_data, headers=self.headers)['data']
         LOGGER.info("Start job, result: {}".format(result))
         return result
+
+    def delete_job(self, job_id):
+        result = GryuRequest.send('jobs/{}/'.format(job_id), method='DELETE', headers=self.headers)['data']
+        LOGGER.info("Delete job {}, result: {}".format(job_id, result))
+        return result
+
 
     def get_job_list(self, page_size, page, job_config_name=None):
         query_str = "jobs?page_size={}&page={}".format(page_size, page)
@@ -99,3 +116,6 @@ class EEBookClient(object):
         query_str = "books?page_size={}&page={}".format(page_size, page)
         result = GryuRequest.send(query_str, method='POST', headers=self.headers)['data']
         return result
+
+    def delete_book(self, book_id):
+        return
