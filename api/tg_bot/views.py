@@ -10,6 +10,7 @@ import telebot
 import os
 import copy
 import hashlib
+import requests
 
 from flask import request, g, current_app
 from telebot.util import extract_arguments
@@ -36,8 +37,6 @@ def bot_webhook():
     if request.method == "POST":
         json_string = request.get_data().decode('utf-8')
         update = telebot.types.Update.de_json(json_string)
-
-        LOGGER.debug("update???{}".format(update))
         user, token = get_user(update.message)
         bot.process_new_updates([update])
         redis_cache.writer.set("eebook-gryu-"+user.username, token)
@@ -47,6 +46,16 @@ def bot_webhook():
 @tg_bot_bp.route('/send_book', methods=['POST'])
 @json
 def send_book():
+    data = request.json.copy()
+    LOGGER.info("Send book, data: {}".format(data))
+    r = requests.get(data["book_url"])
+    with open("/tmp/{}".format(data["book_name"]), 'wb') as f:
+        for chunk in r.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+    doc = open('/tmp/{}'.format(data["book_name"]), 'rb')
+    bot.send_document(data["chat_id"], doc)
+    LOGGER.info("TODO: delete file")
     return {}
 
 def get_user(message):
@@ -123,6 +132,8 @@ def submit_url(message):
     LOGGER.info("config_name: {}".format(config_name))
     envvars = [{"name": k, "value": v} for k, v in submit_env_dict.items()]
     envvars.append({"name": "URL", "value": args[0]})
+    LOGGER.debug("message??? {}".format(message))
+    envvars.append({"name": "_CHAT_ID", "value": str(message.chat.id)})
     envvars.append({"name": "ES_INDEX", "value": url_metadata["name"]})
     job_config_payload = {
         "config_name": config_name,
@@ -130,6 +141,7 @@ def submit_url(message):
         "created_by": message.from_user.username+"-tg",
         "envvars": envvars
     }
+    LOGGER.info("job_config_payload??? {}".format(job_config_payload))
     token = redis_cache.writer.get("eebook-gryu-" + message.from_user.username + "-tg")
     try:
         EEBookClient(token).create_job_config(job_config_payload)
@@ -202,6 +214,7 @@ def list_resource(message):
         LOGGER.info("List configs")
         job_config_result = EEBookClient(token).get_job_config_list(10, 1)
         result = get_list_job_config_result(job_config_result)
+        LOGGER.info("???chat id???{}".format(message.chat.id))
         bot.reply_to(message, result)
         return
     elif args[0] == "jobs" or args[0] == "job":
@@ -223,7 +236,9 @@ def update_resource(message):
     /edit config
     /edit book
     """
+    print("???")
     LOGGER.info("TODO")
+    # LOGGER.info("chat id???{}".format(message["chat"]))
     return
 
 
