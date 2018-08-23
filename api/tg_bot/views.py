@@ -4,7 +4,6 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-
 import logging
 import telebot
 import os
@@ -30,6 +29,7 @@ redis_cache = RedisCache()
 LOGGER = logging.getLogger(__name__)
 bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN", None))
 # bot.set_webhook(url=os.getenv("TG_WEBHOOK_URL", "https://gryuint.nujeh.com/tg_bot/webhook"))
+TG_PASSWORD = os.getenv("TG_PASSWORD", "nopassword")
 
 @tg_bot_bp.route('/webhook', methods=['POST'])
 @json
@@ -55,7 +55,7 @@ def send_book():
                 f.write(chunk)
     doc = open('/tmp/{}'.format(data["book_name"]), 'rb')
     bot.send_document(data["chat_id"], doc)
-    LOGGER.info("TODO: delete file")
+    os.remove('/tmp{}'.format(data["book_name"]))
     return {}
 
 def get_user(message):
@@ -67,12 +67,10 @@ def get_user(message):
         LOGGER.info("User {} not exist, creating".format(message.from_user.username))
         username = message.from_user.username + "-tg"
         email = "tg_user_{}@eebook.com".format(message.from_user.username)
-        # TODO: write password with env !!!
-        # user = Users(username=username, email=email, password="nopassword", is_active=True)
         user_dict = {
             "username": username,
             "email": email,
-            "password": "nopassword",
+            "password": TG_PASSWORD,
             "is_active": False
         }
         user = infra.create_user(user_dict)
@@ -86,6 +84,7 @@ def get_user(message):
 
 @bot.message_handler(commands=['help', 'start'])
 def send_welcome(message):
+    LOGGER.info("TODO: more friendly message")
     bot.reply_to(message, "Hello there")
 
 
@@ -95,6 +94,7 @@ def submit_url(message):
     /submit http://baidu.com
     """
     # http://wiki.jikexueyuan.com/project/explore-python/Standard-Modules/hashlib.html
+    # TODO: only run once a day
     submit_str = extract_arguments(message.text.strip())
     if submit_str == "":
         bot.reply_to(message, "Please input an url, like /submit http://baidu.com")
@@ -187,8 +187,12 @@ def get_url_info(message):
         else:
             response_str = "Something wrong, please contact @knarfeh"
     LOGGER.info("Response string: {}".format(response_str))
-    # bot.reply_to(message, response_str)
+    bot.reply_to(message, response_str)
 
+@bot.message_handler(commands=["example", "examples"])
+def url_example_by_type(message):
+    # TODO
+    pass
 
 @bot.message_handler(commands=["list"])
 def list_resource(message):
@@ -214,7 +218,6 @@ def list_resource(message):
         LOGGER.info("List configs")
         job_config_result = EEBookClient(token).get_job_config_list(10, 1)
         result = get_list_job_config_result(job_config_result)
-        LOGGER.info("???chat id???{}".format(message.chat.id))
         bot.reply_to(message, result)
         return
     elif args[0] == "jobs" or args[0] == "job":
@@ -288,6 +291,7 @@ def delete_resource(message):
         return
     elif args[0] == "books" or args[0] == "book":
         LOGGER.info("Delete book")
+        # TODO
         return
     return
 
@@ -315,6 +319,7 @@ def run_job(message):
     run job with job config or job id
     /run job_config or job_uuid
     """
+    # TODO
     pass
 
 
@@ -326,6 +331,7 @@ def supported_url(message):
     Need improvement
     /supported
     """
+    # TODO
     LOGGER.info("Get supported url, message: {}".foramt(message))
     # bot.reply_to(message, "https://eebook.github.io/catalog/")
 
@@ -338,6 +344,7 @@ def job_logs(message):
     /logs 20                get 20 log of latest job
     /logs job_uuid 20       get 20 logs of a specific job
     """
+    # TODO
     pass
 
 @bot.message_handler(commands=["report"])
@@ -347,6 +354,7 @@ def report_issue(message):
     /report url  report url git repo, git issue
     /report contact @knarfeh
     """
+    # TODO
     pass
 
 
@@ -355,6 +363,7 @@ def donate(message):
     """
     search books
     """
+    # TODO
     pass
 
 @bot.message_handler(commands=["settings"])
@@ -362,6 +371,7 @@ def donate(message):
     """
     settings, including language, search feature(本站搜索，全网搜索)
     """
+    # TODO
     pass
 
 
@@ -377,6 +387,7 @@ def kindle(message):
 def donate(message):
     """
     """
+    # TODO
     pass
 
 # knarfeh's commands
