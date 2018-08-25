@@ -12,6 +12,7 @@ import hashlib
 import requests
 
 from flask import request, g, current_app
+from telebot import types
 from telebot.util import extract_arguments
 
 from . import tg_bot_bp
@@ -30,6 +31,7 @@ LOGGER = logging.getLogger(__name__)
 bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN", None))
 # bot.set_webhook(url=os.getenv("TG_WEBHOOK_URL", "https://gryuint.nujeh.com/tg_bot/webhook"))
 TG_PASSWORD = os.getenv("TG_PASSWORD", "nopassword")
+DEFAULT_PAGE_SIZE = 2
 
 @tg_bot_bp.route('/webhook', methods=['POST'])
 @json
@@ -212,24 +214,31 @@ def list_resource(message):
     if submit_str == "":
         return
     args = submit_str.split(" ")
-    token = redis_cache.writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+    markup = types.InlineKeyboardMarkup()
 
     if args[0] == "config":
         LOGGER.info("List configs")
-        job_config_result = EEBookClient(token).get_job_config_list(10, 1)
-        result = get_list_job_config_result(job_config_result)
-        bot.reply_to(message, result)
+        result, page_total = get_result_by_action_res(message, "list", "config", 1)
+        if int(page_total) == 0:
+            buttons = []
+        else:
+            buttons = [
+                types.InlineKeyboardButton("1", callback_data="current_page:"),
+                types.InlineKeyboardButton(">>", callback_data="next:list_config-1")
+            ]
+        markup.add(*buttons)
+        bot.reply_to(message, result, reply_markup=markup)
         return
     elif args[0] == "jobs" or args[0] == "job":
         LOGGER.info("list jobs")
-        bot.reply_to(message, "list jobs")
+        # bot.reply_to(message, "TODO: list jobs")
         return
     elif args[0] == "books" or args[0] == "book":
         LOGGER.info("list books")
-        bot.reply_to(message, "list books")
+        bot.reply_to(message, "TODO: list books")
         return
 
-    bot.reply_to(message, "test list")
+    bot.reply_to(message, "TODO: not valid")
 
 
 @bot.message_handler(commands=["edit update"])
@@ -394,6 +403,62 @@ def donate(message):
 ## sync repo
 ## get token
 
+@bot.callback_query_handler(func=lambda call: True)
+def process_callback_button(call):
+    LOGGER.info("callback query: {}".format(call))
+    operator, query = call.data.split(":")
+    if operator in ["prev", "next"]:
+        LOGGER.info("pagination_edit_list_by_category")
+        pagination_edit_list_by_category(call, operator, query)
+    elif operator == "current_page":
+        bot.answer_callback_query(callback_query_id=call.id, text='')
+
+def pagination_edit_list_by_category(call, operator, query):
+    LOGGER.info("operator: {}, query: {}".format(operator, query))
+    category, current_page = query.split("-")
+    action, resource = category.split("_")
+    if operator == "prev":
+        this_page = int(current_page) - 1
+    elif operator == "next":
+        this_page = int(current_page) + 1
+    result, page_total = get_result_by_action_res(call, action, resource, this_page)
+    if (this_page<0) or (int(page_total) == 0):
+        bot.answer_callback_query(callback_query_id=call.id, text='')
+    buttons = []
+    if this_page > 1:
+        buttons.append(
+            types.InlineKeyboardButton("<<", callback_data="prev:"+action+"_"+resource+"-"+str(this_page)),
+        )
+    buttons.append(
+        types.InlineKeyboardButton(str(this_page), callback_data="current_page"),
+    )
+    if this_page < int(page_total):
+        buttons.append(
+            types.InlineKeyboardButton(">>", callback_data="next:"+action+"_"+resource+"-"+str(this_page)),
+        )
+    markup = types.InlineKeyboardMarkup()
+    markup.add(*buttons)
+    bot.edit_message_text(
+        result,
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+        reply_markup=markup
+    )
+    bot.answer_callback_query(callback_query_id=call.id, text='')
+
+
+def get_result_by_action_res(message, action, res, page):
+    if action == "list":
+        if res == "config":
+            token = redis_cache.writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+            job_config_result = EEBookClient(token).get_job_config_list(DEFAULT_PAGE_SIZE, page)
+            result = get_list_job_config_result(job_config_result)
+            return result, job_config_result.get("page_total", 0)
+        elif res == "job":
+            return "list job"
+
+
+
 def get_url_info_result(info):
     if info["schema"] is not None:
         env_dict = info["schema"].get("properties", {})
@@ -418,7 +483,7 @@ Variables:
     return result
 
 def get_list_job_config_result(job_configs):
-    if len(job_configs["results"]) != 0:
+    if len(job_configs.get("results", [])) != 0:
         result = """
 🎉🎉🎉
 Your job configs:

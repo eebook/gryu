@@ -38,7 +38,6 @@ def create_app(config_name='dev'):
     @app.before_request
     def ensure_content_type():
         content_type = request.headers.get('Content-type')
-        logger.debug("Request headers: %s", request.headers)
         if not content_type == 'application/json':
             raise APIException('invalid_content_type')
 
