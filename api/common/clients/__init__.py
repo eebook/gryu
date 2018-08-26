@@ -104,12 +104,11 @@ class EEBookClient(object):
         LOGGER.info("Delete job {}, result: {}".format(job_id, result))
         return result
 
-
     def get_job_list(self, page_size, page, job_config_name=None):
         query_str = "jobs?page_size={}&page={}".format(page_size, page)
         if job_config_name is not None:
             query_str = query_str + "&config_name={}".format(job_config_name)
-        result = GryuRequest.send(query_str, method='POST', headers=self.headers)['data']
+        result = GryuRequest.send(query_str, method='GET', headers=self.headers)['data']
         return result
 
     def get_books_list(self, page_size, page):
