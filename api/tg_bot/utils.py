@@ -23,11 +23,13 @@ def pagination_edit_list_by_category(call, operator, query):
     LOGGER.info("Pagination, operator: {}, query: {}".format(operator, query))
     category, current_page = query.split("-")
     action, resource = category.split("_")
+    resource_list = resource.split("/")
+    resource_type, resource_name = resource_list if len(resource_list) == 2 else [resource_list[0], None]
     if operator == "prev":
         this_page = int(current_page) - 1
     elif operator == "next":
         this_page = int(current_page) + 1
-    result, page_total = get_result_by_action_res(call, action, resource, this_page)
+    result, page_total = get_result_by_action_res(call, action, resource_type, this_page, resource_name)
     LOGGER.info("Total page: {}".format(page_total))
     LOGGER.info("this_page: {}".format(this_page))
 
@@ -56,18 +58,26 @@ def pagination_edit_list_by_category(call, operator, query):
     bot.answer_callback_query(callback_query_id=call.id, text='')
 
 
-def get_result_by_action_res(message, action, res, page):
+def get_result_by_action_res(message, action, res, page, res_name=None, header=None):
     if action == "list":
         if res == "config":
             token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
             job_config_result = EEBookClient(token).get_job_config_list(DEFAULT_PAGE_SIZE, page)
-            result = get_list_job_config_result(job_config_result)
+            result = get_list_job_config_result(job_config_result, header)
             return result, job_config_result.get("page_total", 0)
         elif res == "job":
             token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
-            jobs_result = EEBookClient(token).get_job_list(DEFAULT_PAGE_SIZE, page)
-            result = get_list_job_result(jobs_result)
+            jobs_result = EEBookClient(token).get_job_list(DEFAULT_PAGE_SIZE, page, res_name)
+            result = get_list_job_result(jobs_result, _header=header)
             return result, jobs_result.get("page_total", 0)
+    elif action == "detail":
+        if res == "config":
+            token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+            jobs_result = EEBookClient(token).get_job_list(DEFAULT_PAGE_SIZE, page, res_name)
+            LOGGER.info("jobs_result???{}".format(jobs_result))
+            result = get_list_job_result(jobs_result, _header=header)
+            return result, jobs_result.get("page_total", 0)
+
 
 def list_result(res_id, header, action_type, res_results):
     result2return = header
@@ -77,7 +87,7 @@ def list_result(res_id, header, action_type, res_results):
         result2return = result2return + line
     return result2return
 
-def get_list_job_result(jobs_result):
+def get_list_job_result(jobs_result, _header=None):
     if not jobs_result.get("results", []):
         header = """
 Sorry, you don't have any jobs.
@@ -88,11 +98,13 @@ Sorry, you don't have any jobs.
 Your jobs:
 
 """
+    if _header:
+        header = _header
     result = list_result("job_uuid", header, "/detail_job_", jobs_result)
     return result
 
 
-def get_list_job_config_result(job_configs):
+def get_list_job_config_result(job_configs, _header=None):
     if not job_configs.get("results", []):
         header = """
 Sorry, you don't have any job config.
@@ -103,8 +115,41 @@ Sorry, you don't have any job config.
 Your job configs:
 
 """
+    if _header:
+        header = _header
     result = list_result("config_name", header, "/detail_config_", job_configs)
     # result = result + "\n Try /detail {{config}} to get the detail"
+    return result
+
+
+def get_detail_job_config_result(config_detail):
+    new_config_detail = mk_variable_str(config_detail)
+    result = """
+🎉🎉🎉
+{config_name}
+
+Created at: {created_at}
+Image: {image_name}:{image_tag}
+URL: {url}
+Variables:
+{variable_str}
+""".format(**new_config_detail)
+    return result
+
+
+def get_detail_job_result(job_detail):
+    LOGGER.info("job detail: {}".format(job_detail))
+    new_job_detail = mk_variable_str(job_detail)
+    result = """
+🎉🎉🎉
+{job_uuid}
+
+Config Name: {config_name}, /detail_config_{config_name}
+Image: {image_name}:{image_tag}
+URL: {url}
+Variables:
+{variable_str}
+""".format(**new_job_detail)
     return result
 
 
@@ -145,6 +190,32 @@ def delete_config(token, config_name):
     return response_str
 
 
+def detail_config(token, config_name):
+    try:
+        result = EEBookClient(token).get_job_config_detail(config_name)
+        response_str = get_detail_job_config_result(result)
+    except ServiceException as s:
+        if s.code == "resource_not_exist":
+            response_str = "Ops, job config not exist"
+        else:
+            response_str = "Something wrong, please contact @knarfeh"
+    LOGGER.info("Get detailed config %s, response str: %s", config_name, response_str)
+    return response_str
+
+
+def detail_job(token, job_id):
+    try:
+        result = EEBookClient(token).get_job_detail(job_id)
+        response_str = get_detail_job_result(result)
+    except ServiceException as s:
+        if s.code == "resource_not_exist":
+            response_str = "Ops, job not exist"
+        else:
+            response_str = "Something wrong, please contact @knarfeh"
+    LOGGER.info("Get detailed job %s, response str: %s", job_id, response_str)
+    return response_str
+
+
 def start_job(token, payload):
     try:
         EEBookClient(token).start_job(payload)
@@ -166,3 +237,14 @@ def delete_job(token, job_id):
             response_str = "Something wrong, please contact @knarfeh"
     LOGGER.info("Delete job %s, response str: %s", job_id, response_str)
     return response_str
+
+
+def mk_variable_str(detail_dict):
+    variable_str = ""
+    for item in detail_dict["envvars"]:
+        if item["name"] == "URL":
+            detail_dict["url"] = item["value"]
+        else:
+            variable_str = variable_str + item["name"] + "=" + item["value"] + "\n"
+    detail_dict["variable_str"] = variable_str
+    return detail_dict

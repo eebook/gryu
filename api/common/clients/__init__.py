@@ -85,9 +85,8 @@ class EEBookClient(object):
 
     def get_job_config_detail(self, config_name):
         result = GryuRequest.send("job_configs/{}/".format(config_name), method='GET', headers=self.headers)['data']
-        LOGGER.info('Create job config, result: {}'.format(result))
+        LOGGER.info('Get job config {}, result: {}'.format(config_name, result))
         return result
-
 
     def delete_job_config(self, config_name):
         LOGGER.info("Delete {}".format(config_name))
@@ -97,6 +96,11 @@ class EEBookClient(object):
     def start_job(self, _data):
         result = GryuRequest.send('jobs/', method='POST', data=_data, headers=self.headers)['data']
         LOGGER.info("Start job, result: {}".format(result))
+        return result
+
+    def get_job_detail(self, job_id):
+        result = GryuRequest.send('jobs/{}/'.format(job_id), method='GET', headers=self.headers)['data']
+        LOGGER.info("Get job {}'s detail, result: {}".format(job_id, result))
         return result
 
     def delete_job(self, job_id):
