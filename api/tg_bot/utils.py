@@ -11,7 +11,7 @@ import telebot
 from telebot import types
 from telebot.util import extract_arguments
 from ..common.exceptions import ServiceException
-from ..common.clients import EEBookClient
+from ..common.clients import EEBookClient, UrlMetadataClient
 from ..cache import RedisCache
 
 bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN", None))
@@ -74,7 +74,6 @@ def get_result_by_action_res(message, action, res, page, res_name=None, header=N
         if res == "config":
             token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
             jobs_result = EEBookClient(token).get_job_list(DEFAULT_PAGE_SIZE, page, res_name)
-            LOGGER.info("jobs_result???{}".format(jobs_result))
             result = get_list_job_result(jobs_result, _header=header)
             return result, jobs_result.get("page_total", 0)
 
@@ -98,8 +97,8 @@ Sorry, you don't have any jobs.
 Your jobs:
 
 """
-    if _header:
-        header = _header
+        if _header:
+            header = _header
     result = list_result("job_uuid", header, "/detail_job_", jobs_result)
     return result
 
@@ -133,6 +132,11 @@ Image: {image_name}:{image_tag}
 URL: {url}
 Variables:
 {variable_str}
+
+Run job with config:
+  /run_config_{config_name}
+Delete job config:
+  /delete_config_{config_name}
 """.format(**new_config_detail)
     return result
 
@@ -144,11 +148,16 @@ def get_detail_job_result(job_detail):
 🎉🎉🎉
 {job_uuid}
 
-Config Name: {config_name}, /detail_config_{config_name}
+Config Name: {config_name}
 Image: {image_name}:{image_tag}
 URL: {url}
 Variables:
 {variable_str}
+
+Get config detail:
+  /detail_config_{config_name}
+Delete job:
+  /delete_job_{job_uuid}
 """.format(**new_job_detail)
     return result
 
@@ -236,6 +245,18 @@ def delete_job(token, job_id):
         else:
             response_str = "Something wrong, please contact @knarfeh"
     LOGGER.info("Delete job %s, response str: %s", job_id, response_str)
+    return response_str
+
+def get_url_info(payload):
+    try:
+        url_metadata = UrlMetadataClient.get_url_metadata(payload)
+        response_str = get_url_info_result(url_metadata)
+    except ServiceException as s:
+        if s.code == "url_not_support":
+            # TODO: recommend similar url
+            response_str = "Url not supported"
+        else:
+            response_str = "Something wrong, please contact @knarfeh"
     return response_str
 
 

@@ -24,9 +24,9 @@ from ..users.domain import generate_api_token
 from ..cache import RedisCache
 from ..common.clients import EEBookClient, UrlMetadataClient
 from ..common.exceptions import ServiceException
-from .utils import (pagination_edit_list_by_category, get_result_by_action_res, get_url_info_result,
-                    delete_config, detail_config, start_job,
-                    delete_job, detail_job)
+from .utils import (pagination_edit_list_by_category, get_result_by_action_res, delete_config,
+                    detail_config, start_job, delete_job,
+                    detail_job, get_url_info)
 
 bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN", None))
 # bot.set_webhook(url=os.getenv("TG_WEBHOOK_URL", "https://gryuint.nujeh.com/tg_bot/webhook"))
@@ -41,11 +41,11 @@ def bot_webhook():
     if request.method == "POST":
         json_string = request.get_data().decode('utf-8')
         update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+
         username = update.message.from_user.username
         user, token = get_user(username)
         RedisCache().writer.set("eebook-gryu-"+user.username, token)
-        # DO NOT modify update obj before the following line.
-        bot.process_new_updates([update])
         RedisCache().writer.expire("eebook-gryu-"+user.username, USER_TOKEN_EXPIRED)
         return {}
 
@@ -155,16 +155,8 @@ def get_url_info(message):
     if url == "":
         bot.reply_to(message, "Please input an url, like /url_info http://baidu.com")
         return
-    data = { "url": url}
-    try:
-        url_metadata = UrlMetadataClient.get_url_metadata(data)
-        response_str = get_url_info_result(url_metadata)
-    except ServiceException as s:
-        if s.code == "url_not_support":
-            # TODO: recommend similar url
-            response_str = "Url not supported"
-        else:
-            response_str = "Something wrong, please contact @knarfeh"
+    data = { "url": url }
+    response_str = get_url_info(data)
     LOGGER.info("Response string: %s", response_str)
     bot.reply_to(message, response_str)
 
@@ -196,7 +188,7 @@ def list_resource(message):
     if args[0] == "config" or args[0] == "configs":
         LOGGER.info("List configs")
         result, page_total = get_result_by_action_res(message, "list", "config", 1)
-        if int(page_total) != 0:
+        if int(page_total) >= 2:
             markup.add(
                 types.InlineKeyboardButton("1", callback_data="current_page:"),
                 types.InlineKeyboardButton(">>", callback_data="next:list_config-1")
@@ -205,7 +197,7 @@ def list_resource(message):
     elif args[0] == "job" or args[0] == "jobs":
         LOGGER.info("List jobs")
         result, page_total = get_result_by_action_res(message, "list", "job", 1)
-        if int(page_total) != 0:
+        if int(page_total) >= 2:
             markup.add(
                 types.InlineKeyboardButton("1", callback_data="current_page:"),
                 types.InlineKeyboardButton(">>", callback_data="next:list_job-1")
@@ -237,31 +229,30 @@ def get_resource(message):
     if args[0] == "config" or args[0] == "configs":
         if len(args) == 1:
             LOGGER.info("no config name, list /detail_config_name")
-            config_detail_result = detail_config(token, args[1])
-            config_jobs_result, page_total = get_result_by_action_res(message, "list", "config", 1, header="Job configs: {}:\n".format(args[1]))
-            if int(page_total) != 0:
+            result, page_total = get_result_by_action_res(message, "list", "config", 1)
+            if int(page_total) >= 2:
                 markup.add(
                     types.InlineKeyboardButton("1", callback_data="current_page:"),
-                    types.InlineKeyboardButton(">>", callback_data="next:list_config-1".format(args[1]))
+                    types.InlineKeyboardButton(">>", callback_data="next:list_config-1")
                 )
         else:
             config_detail_result = detail_config(token, args[1])
             config_jobs_result, page_total = get_result_by_action_res(message, "detail", "config", 1, res_name=args[1], header="Jobs of {}:\n".format(args[1]))
-            if int(page_total) != 0:
+            if int(page_total) != 0 and int(page_total) != 1:
                 markup.add(
                     types.InlineKeyboardButton("1", callback_data="current_page:"),
                     types.InlineKeyboardButton(">>", callback_data="next:detail_config/{}-1".format(args[1]))
                 )
-            LOGGER.info("Need tests!!!!")
+            LOGGER.info("List config {}, config_detail_result: {}".format(args[1], config_jobs_result))
             LOGGER.info("List config {}, result: {}".format(args[1], config_jobs_result))
-        result = config_detail_result + "\n" + config_jobs_result
+            result = config_detail_result + "\n" + config_jobs_result
         LOGGER.debug("Got detailed config result: {}, args: {}".format(result, args))
     elif args[0] == "job" or args[0] == "jobs":
         if len(args) == 1:
             LOGGER.info("no jobname, list /detail_job_name")
             job_detail_result = detail_job(token, args[1])
-            jobs_result, page_total = get_result_by_action_res(message, "list", "job", 1, res_name=None, header="Jobs:\n")
-            if int(page_total) != 0:
+            jobs_result, page_total = get_result_by_action_res(message, "list", "job", 1)
+            if int(page_total) >= 2:
                 markup.add(
                     types.InlineKeyboardButton("1", callback_data="current_page:"),
                     types.InlineKeyboardButton(">>", callback_data="next:list_job-1")
@@ -274,10 +265,14 @@ def get_resource(message):
         result = job_detail_result + "\n" + jobs_result
         LOGGER.info("Detail jobs, result:\n{}".format(result))
     elif args[0] == "book" or args[0] == "books":
+        # TODO
         pass
     elif args[0] == "":
         result = "/detail_config \n /detail_job \n /detail_book"
-    # bot.reply_to(message, result)
+    else:
+        print("TODO")
+        pass
+    bot.reply_to(message, result, reply_markup=markup)
 
 
 @bot.message_handler(commands=["delete"])
@@ -289,8 +284,6 @@ def delete_resource(message):
     /delete book
     """
     submit_str = extract_arguments(message.text.strip())
-    if submit_str == "":
-        return
     args = submit_str.split(" ")
     if len(args) < 2:
         LOGGER.info("Please specify a name to delete")
@@ -299,17 +292,16 @@ def delete_resource(message):
     if args[0] == "config":
         LOGGER.info("Delete config %s", args[1])
         response_str = delete_config(token, args[1])
-        bot.reply_to(message, response_str)
-        return
     elif args[0] == "job" or args[0] == "jobs":
-        LOGGER.info("Delete job: %s", args[1])
-        response_str = delete_job(token, args[1])
-        bot.reply_to(message, response_str)
-        return
+        job_id = "-".join(args[1:])
+        LOGGER.info("Delete job: %s", job_id)
+        response_str = delete_job(token, job_id)
     elif args[0] == "books" or args[0] == "book":
         LOGGER.info("Delete book")
-        # TODO
-        return
+        response_str = "TODO"
+    elif args[0] == "":
+        response_str = "/delete_config \n /delete_job \n /delete_book"
+    bot.reply_to(message, response_str)
     return
 
 
@@ -330,9 +322,23 @@ def run_job(message):
     """
     run job with job config or job id
     /run job_config or job_uuid
+    /run_config_name
     """
-    # TODO
-    pass
+    submit_str = extract_arguments(message.text.strip())
+    if submit_str == "":
+        return
+    args = submit_str.split(" ")
+    if len(args) < 2:
+        LOGGER.info("Please specify a name to run")
+    token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+
+    if args[0] == "config":
+        payload = {
+            "config_name": args[1]
+        }
+        response_str = start_job(token, start_job_payload)
+        LOGGER.info("Start a job, response string: %s", response_str)
+    bot.reply_to(message, response_str)
 
 
 @bot.message_handler(commands=["supported"])
