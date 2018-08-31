@@ -89,7 +89,7 @@ class EEBookClient(object):
         return result
 
     def delete_job_config(self, config_name):
-        LOGGER.info("Delete {}".format(config_name))
+        LOGGER.info("Delete config: %s", config_name)
         result = GryuRequest.send("job_configs/{}/".format(config_name), method='DELETE', headers=self.headers)['data']
         return result
 
@@ -115,10 +115,11 @@ class EEBookClient(object):
         result = GryuRequest.send(query_str, method='GET', headers=self.headers)['data']
         return result
 
-    def get_books_list(self, page_size, page):
-        query_str = "books?page_size={}&page={}".format(page_size, page)
-        result = GryuRequest.send(query_str, method='POST', headers=self.headers)['data']
+    def get_book_list(self, page_size, page):
+        query_str = "books/?page_size={}&page={}".format(page_size, page)
+        result = GryuRequest.send(query_str, method='GET', headers=self.headers)['data']
         return result
 
     def delete_book(self, book_id):
-        return
+        result = GryuRequest.send("books/{}/".format(book_id), method="DELETE", headers=self.headers)['data']
+        return result

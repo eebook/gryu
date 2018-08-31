@@ -10,6 +10,8 @@ import telebot
 
 from telebot import types
 from telebot.util import extract_arguments
+
+from . import constants
 from ..common.exceptions import ServiceException
 from ..common.clients import EEBookClient, UrlMetadataClient
 from ..cache import RedisCache
@@ -70,6 +72,11 @@ def get_result_by_action_res(message, action, res, page, res_name=None, header=N
             jobs_result = EEBookClient(token).get_job_list(DEFAULT_PAGE_SIZE, page, res_name)
             result = get_list_job_result(jobs_result, _header=header)
             return result, jobs_result.get("page_total", 0)
+        elif res == "book":
+            token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+            books_result = EEBookClient(token).get_book_list(DEFAULT_PAGE_SIZE, page)
+            result = get_list_book_result(books_result, header)
+            return result, books_result.get("page_total", 0)
     elif action == "detail":
         if res == "config":
             token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
@@ -86,6 +93,22 @@ def list_result(res_id, header, action_type, res_results):
         result2return = result2return + line
     return result2return
 
+def get_list_book_result(books_result, _header=None):
+    if not books_result.get("results", []):
+        header = """
+Sorry, you don't have any books.
+"""
+    else:
+        header = """
+🎉🎉🎉
+Your books:
+
+"""
+    if _header:
+        header = _header
+    result = list_result("uuid", header, "/detail_book_", books_result)
+    return result
+
 def get_list_job_result(jobs_result, _header=None):
     if not jobs_result.get("results", []):
         header = """
@@ -97,8 +120,8 @@ Sorry, you don't have any jobs.
 Your jobs:
 
 """
-        if _header:
-            header = _header
+    if _header:
+        header = _header
     result = list_result("job_uuid", header, "/detail_job_", jobs_result)
     return result
 
@@ -179,20 +202,21 @@ Yes, you can submit this url
 Name: {}
 Description: {}
 Repository: {}
-Variables:
-{}
-
     """.format(info["name"], info["info"], info["repo"], variable_str)
+    if variable_str != "\n":
+        result = result + "\nVariables:\n{}".format(variable_str)
     return result
 
 
 def delete_config(token, config_name):
     try:
         EEBookClient(token).delete_job_config(config_name)
-        response_str = "Successfully deleted config {}".format(config_name)
+        response_str = "Config {} deleted successfully".format(config_name)
     except ServiceException as s:
         if s.code == "resource_not_exist":
             response_str = "Ops, job config not exist"
+        elif s.error_type == "unauthorized":
+            response_str = "Hello there, Long time no see."
         else:
             response_str = "Something wrong, please contact @knarfeh"
     LOGGER.info("Delete config %s, response str: %s", config_name, response_str)
@@ -206,6 +230,8 @@ def detail_config(token, config_name):
     except ServiceException as s:
         if s.code == "resource_not_exist":
             response_str = "Ops, job config not exist"
+        elif s.error_type == "unauthorized":
+            response_str = constants.TOKEN_EXPIRED_STRING
         else:
             response_str = "Something wrong, please contact @knarfeh"
     LOGGER.info("Get detailed config %s, response str: %s", config_name, response_str)
@@ -229,8 +255,12 @@ def start_job(token, payload):
     try:
         EEBookClient(token).start_job(payload)
         response_str = "Working on it!"
-    except ServiceException as e:
-        if e.code == "unknown_issue":
+    except ServiceException as s:
+        if s.code == "resource_not_exist":
+            response_str = "Ops, job config not exist"
+        elif s.error_type == "unauthorized":
+            response_str = "Hello there, Long time no see."
+        if s.code == "unknown_issue":
             response_str = "Something wrong, please contact @knarfeh"
     return response_str
 
@@ -238,13 +268,30 @@ def start_job(token, payload):
 def delete_job(token, job_id):
     try:
         EEBookClient(token).delete_job(job_id)
-        response_str = "Successfully deleted job: {}".format(job_id)
+        response_str = "Job: {} deleted successfully".format(job_id)
     except ServiceException as s:
         if s.code == "resource_not_exist":
             response_str = "Ops, job {} not exist".format(job_id)
+        elif s.error_type == "unauthorized":
+            response_str = "Hello there, Long time no see."
         else:
             response_str = "Something wrong, please contact @knarfeh"
     LOGGER.info("Delete job %s, response str: %s", job_id, response_str)
+    return response_str
+
+
+def delete_book(token, book_id):
+    try:
+        EEBookClient(token).delete_book(book_id)
+        response_str = "Book: {} deleted successfully".format(book_id)
+    except ServiceException as s:
+        if s.code == "resource_not_exist":
+            response_str = "Ops, book {} not exist".format(book_id)
+        elif s.error_type == "unauthorized":
+            response_str = "Hello there, Long time no see."
+        else:
+            response_str = "Something wrong, please contact @knarfeh"
+    LOGGER.info("Delete book %s, response str: %s", book_id, response_str)
     return response_str
 
 def get_url_info(payload):

@@ -261,6 +261,9 @@ class DoRequest(object):
         except Exception as ex:
             LOGGER.error('Failed to parse response: {}.\n'
                          'Raw response text is {}.'.format(type(ex), response.text))
+            if response.status_code == status.HTTP_401_UNAUTHORIZED:
+                raise ServiceException(status.HTTP_401_UNAUTHORIZED,
+                                       'service data was not in valid json format.', target_source)
             raise ServiceException(status.HTTP_500_INTERNAL_SERVER_ERROR,
                                    'service data was not in valid json format.', target_source)
 

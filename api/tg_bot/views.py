@@ -16,6 +16,7 @@ from telebot import types
 from telebot.util import extract_arguments
 
 
+from . import constants
 from . import tg_bot_bp
 from ..common.utils import json
 from ..users.models import Users, ActivationKeys, EncryptedTokens
@@ -26,12 +27,13 @@ from ..common.clients import EEBookClient, UrlMetadataClient
 from ..common.exceptions import ServiceException
 from .utils import (pagination_edit_list_by_category, get_result_by_action_res, delete_config,
                     detail_config, start_job, delete_job,
-                    detail_job, get_url_info)
+                    detail_job, get_url_info, delete_book)
 
 bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN", None))
 # bot.set_webhook(url=os.getenv("TG_WEBHOOK_URL", "https://gryuint.nujeh.com/tg_bot/webhook"))
 TG_PASSWORD = os.getenv("TG_PASSWORD", "nopassword")
-USER_TOKEN_EXPIRED = os.getenv("USER_TOKEN_EXPIRED", "3600")
+# USER_TOKEN_EXPIRED = os.getenv("USER_TOKEN_EXPIRED", "2147483647")
+USER_TOKEN_EXPIRED = os.getenv("USER_TOKEN_EXPIRED", "3")
 LOGGER = logging.getLogger(__name__)
 
 
@@ -146,7 +148,7 @@ def submit_url(message):
 
 
 @bot.message_handler(commands=["url_info"])
-def get_url_info(message):
+def url_info(message):
     """
     /url_info http://baidu.com
     """
@@ -204,22 +206,29 @@ def list_resource(message):
             )
         LOGGER.info("List jobs, result: {}".format(result))
     elif args[0] == "book" or args[0] == "books":
-        LOGGER.info("list books")
+        LOGGER.info("List books, TODO")
+        result, page_total = get_result_by_action_res(message, "list", "book", 1)
+        if int(page_total) >= 2:
+            markup.add(
+                types.InlineKeyboardButton("1", callback_data="current_page:"),
+                types.InlineKeyboardButton(">>", callback_data="next:list_book-1")
+            )
+        LOGGER.info("List books, result: {}".format(result))
     elif args[0] == "":
         LOGGER.info("/list")
         result = "/list_config \n /list_job \n list_book \n"
     else:
         result = "Unsupported resource"
-    bot.reply_to(message, result, reply_markup=markup)
+    # bot.reply_to(message, result, reply_markup=markup)
 
 
 @bot.message_handler(commands=["detail"])
 def get_resource(message):
     """
     get details of a resource
-    /detail config
-    /detail job
-    /detail book
+    /detail_config
+    /detail_job
+    /detail_book
     """
     submit_str = extract_arguments(message.text.strip())
     args = submit_str.split(" ")
@@ -237,20 +246,23 @@ def get_resource(message):
                 )
         else:
             config_detail_result = detail_config(token, args[1])
-            config_jobs_result, page_total = get_result_by_action_res(message, "detail", "config", 1, res_name=args[1], header="Jobs of {}:\n".format(args[1]))
-            if int(page_total) != 0 and int(page_total) != 1:
-                markup.add(
-                    types.InlineKeyboardButton("1", callback_data="current_page:"),
-                    types.InlineKeyboardButton(">>", callback_data="next:detail_config/{}-1".format(args[1]))
-                )
-            LOGGER.info("List config {}, config_detail_result: {}".format(args[1], config_jobs_result))
-            LOGGER.info("List config {}, result: {}".format(args[1], config_jobs_result))
-            result = config_detail_result + "\n" + config_jobs_result
+            if config_detail_result == constants.TOKEN_EXPIRED_STRING:
+                result = config_detail_result
+            else:
+                config_jobs_result, page_total = get_result_by_action_res(message, "detail", "config", 1, res_name=args[1], header="Jobs of {}:\n".format(args[1]))
+                if int(page_total) != 0 and int(page_total) != 1:
+                    markup.add(
+                        types.InlineKeyboardButton("1", callback_data="current_page:"),
+                        types.InlineKeyboardButton(">>", callback_data="next:detail_config/{}-1".format(args[1]))
+                    )
+                LOGGER.info("List config {}, config_detail_result: {}".format(args[1], config_jobs_result))
+                LOGGER.info("List config {}, result: {}".format(args[1], config_jobs_result))
+                result = config_detail_result + "\n" + config_jobs_result
         LOGGER.debug("Got detailed config result: {}, args: {}".format(result, args))
     elif args[0] == "job" or args[0] == "jobs":
         if len(args) == 1:
             LOGGER.info("no jobname, list /detail_job_name")
-            job_detail_result = detail_job(token, args[1])
+            job_detail_result = ""
             jobs_result, page_total = get_result_by_action_res(message, "list", "job", 1)
             if int(page_total) >= 2:
                 markup.add(
@@ -263,7 +275,7 @@ def get_resource(message):
             job_detail_result = detail_job(token, job_id)
             jobs_result = "/delete_job_" + job_id.replace("-", "_")
         result = job_detail_result + "\n" + jobs_result
-        LOGGER.info("Detail jobs, result:\n{}".format(result))
+        LOGGER.debug("Got detailed job result: {}, args: {}".format(result, args))
     elif args[0] == "book" or args[0] == "books":
         # TODO
         pass
@@ -272,7 +284,7 @@ def get_resource(message):
     else:
         print("TODO")
         pass
-    bot.reply_to(message, result, reply_markup=markup)
+    # bot.reply_to(message, result, reply_markup=markup)
 
 
 @bot.message_handler(commands=["delete"])
@@ -297,11 +309,13 @@ def delete_resource(message):
         LOGGER.info("Delete job: %s", job_id)
         response_str = delete_job(token, job_id)
     elif args[0] == "books" or args[0] == "book":
-        LOGGER.info("Delete book")
-        response_str = "TODO"
+        book_id = "-".join(args[1:])
+        LOGGER.info("Delete book: %s", book_id)
+        response_str = delete_book(token, book_id)
     elif args[0] == "":
         response_str = "/delete_config \n /delete_job \n /delete_book"
-    bot.reply_to(message, response_str)
+    LOGGER.info("Delete resource, args[0]: {}, response_str: {}".format(args[0], response_str))
+    # bot.reply_to(message, response_str)
     return
 
 
@@ -336,7 +350,7 @@ def run_job(message):
         payload = {
             "config_name": args[1]
         }
-        response_str = start_job(token, start_job_payload)
+        response_str = start_job(token, payload)
         LOGGER.info("Start a job, response string: %s", response_str)
     bot.reply_to(message, response_str)
 
@@ -371,6 +385,15 @@ def report_issue(message):
     report an issue
     /report url  report url git repo, git issue
     /report contact @knarfeh
+    """
+    # TODO
+    pass
+
+
+@bot.message_handler(commands=["dl"])
+def download_book(message):
+    """
+    /dl_book_id report url git repo, git issue
     """
     # TODO
     pass

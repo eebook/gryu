@@ -29,4 +29,4 @@ class SearchClient(object):
     @classmethod
     def delete_book(cls, book_uuid):
         LOGGER.debug('SearchClient delete book, book id: %s', book_uuid)
-        return
+        VhfwRequest.send("book/" + book_uuid, method="DELETE", target_source=18087)

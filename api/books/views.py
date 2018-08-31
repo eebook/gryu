@@ -85,24 +85,30 @@ def list_create_book():
 
         return {"book_uuid": data['uuid']}, status.HTTP_201_CREATED
 
-@books_bp.route('/detail/<regex("{}"):book_uuid>/'.format(UUID_REGEX), methods=["GET", "DELETE"])
+@books_bp.route('/<regex("{}"):book_uuid>/'.format(UUID_REGEX), methods=["GET"])
 @json
 # @token_auth.login_required
-def get_delete_book(book_uuid):
+def get_book(book_uuid):
     if request.method == "GET":
         LOGGER.info('Get book, book id: %s', book_uuid)
         book_res = infra.get_resource_obj(None, None, None, _uuid=book_uuid)
         book_result = SearchClient.get_book(book_uuid)
         book_result["result"]["is_public"] = book_res.is_public
         return book_result
-    elif request.method == "DELETE":
-        LOGGER.info('Delete book, book id: %s', book_uuid)
-        book_res = infra.get_resource_obj(None, None, None, _uuid=book_uuid)
-        infra.delete_resource(book_res)
-        # TODO, SearchClient should add this method, epub file should be deleted
-        return {}, status.HTTP_204_NO_CONTENT
 
-@books_bp.route('/detail/<regex("{}"):book_uuid>/'.format(UUID_REGEX), methods=["PUT"])
+
+@books_bp.route('/<regex("{}"):book_uuid>/'.format(UUID_REGEX), methods=["DELETE"])
+@json
+@token_auth.login_required
+def delete_book(book_uuid):
+    LOGGER.info('Delete book, book id: %s', book_uuid)
+    book_res = infra.get_resource_obj(None, None, None, _uuid=book_uuid)
+    infra.delete_resource(book_res)
+    SearchClient.delete_book(book_uuid)
+    return {}, status.HTTP_204_NO_CONTENT
+
+
+@books_bp.route('/<regex("{}"):book_uuid>/'.format(UUID_REGEX), methods=["PUT"])
 @json
 @schema('update_book_permission.json')
 @token_auth.login_required
