@@ -123,3 +123,8 @@ class EEBookClient(object):
     def delete_book(self, book_id):
         result = GryuRequest.send("books/{}/".format(book_id), method="DELETE", headers=self.headers)['data']
         return result
+
+    def get_book_detail(self, book_id):
+        result = GryuRequest.send('books/{}/'.format(book_id), method='GET', headers=self.headers)['data']
+        LOGGER.info("Get book {}'s detail, result: {}".format(book_id, result))
+        return result

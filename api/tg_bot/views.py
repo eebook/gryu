@@ -27,13 +27,15 @@ from ..common.clients import EEBookClient, UrlMetadataClient
 from ..common.exceptions import ServiceException
 from .utils import (pagination_edit_list_by_category, get_result_by_action_res, delete_config,
                     detail_config, start_job, delete_job,
-                    detail_job, get_url_info, delete_book)
+                    detail_job, get_url_info, delete_book,
+                    detail_book
+)
 
 bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN", None))
 # bot.set_webhook(url=os.getenv("TG_WEBHOOK_URL", "https://gryuint.nujeh.com/tg_bot/webhook"))
 TG_PASSWORD = os.getenv("TG_PASSWORD", "nopassword")
-# USER_TOKEN_EXPIRED = os.getenv("USER_TOKEN_EXPIRED", "2147483647")
-USER_TOKEN_EXPIRED = os.getenv("USER_TOKEN_EXPIRED", "3")
+USER_TOKEN_EXPIRED = os.getenv("USER_TOKEN_EXPIRED", "2147483647")
+# USER_TOKEN_EXPIRED = os.getenv("USER_TOKEN_EXPIRED", "3")
 LOGGER = logging.getLogger(__name__)
 
 
@@ -219,7 +221,7 @@ def list_resource(message):
         result = "/list_config \n /list_job \n list_book \n"
     else:
         result = "Unsupported resource"
-    # bot.reply_to(message, result, reply_markup=markup)
+    bot.reply_to(message, result, reply_markup=markup)
 
 
 @bot.message_handler(commands=["detail"])
@@ -261,7 +263,7 @@ def get_resource(message):
         LOGGER.debug("Got detailed config result: {}, args: {}".format(result, args))
     elif args[0] == "job" or args[0] == "jobs":
         if len(args) == 1:
-            LOGGER.info("no jobname, list /detail_job_name")
+            LOGGER.info("no job id, list /detail_job_id")
             job_detail_result = ""
             jobs_result, page_total = get_result_by_action_res(message, "list", "job", 1)
             if int(page_total) >= 2:
@@ -277,14 +279,28 @@ def get_resource(message):
         result = job_detail_result + "\n" + jobs_result
         LOGGER.debug("Got detailed job result: {}, args: {}".format(result, args))
     elif args[0] == "book" or args[0] == "books":
-        # TODO
-        pass
+        if len(args) == 1:
+            LOGGER.info("no book id, list /detail_book_id")
+            book_detail_result = ""
+            books_result, page_total = get_result_by_action_res(message, "list", "book", 1)
+            if int(page_total) >= 2:
+                markup.add(
+                    types.InlineKeyboardButton("1", callback_data="current_page:"),
+                    types.InlineKeyboardButton(">>", callback_data="next:list_book-1")
+                )
+        else:
+            book_id = "-".join(args[1:])
+            LOGGER.info("Get detail of book: %s", book_id)
+            book_detail_result = detail_book(token, book_id)
+            books_result = "/detele_book_" + book_id.replace("-", "_")
+        result = book_detail_result + "\n" + books_result
+        LOGGER.info("Got detailed book result: {}, args: {}".format(result, args))
     elif args[0] == "":
         result = "/detail_config \n /detail_job \n /detail_book"
     else:
         print("TODO")
         pass
-    # bot.reply_to(message, result, reply_markup=markup)
+    bot.reply_to(message, result, reply_markup=markup)
 
 
 @bot.message_handler(commands=["delete"])
@@ -315,7 +331,7 @@ def delete_resource(message):
     elif args[0] == "":
         response_str = "/delete_config \n /delete_job \n /delete_book"
     LOGGER.info("Delete resource, args[0]: {}, response_str: {}".format(args[0], response_str))
-    # bot.reply_to(message, response_str)
+    bot.reply_to(message, response_str)
     return
 
 
@@ -451,7 +467,7 @@ def other_message(message):
     print("WTF is cmd_args???{}".format(cmd_args))
     if cmd_args[0].startswith("/") and cmd_args[0] not in ["/list", "/detail", "/delete"]:
         result = "Unsupported command"
-        # bot.reply_to(message, result)
+        bot.reply_to(message, result)
         return
     elif cmd_args[0].startswith("/") and cmd_args[0] in ["/list", "/detail", "/delete"]:
         new_message_json["text"] = " ".join(cmd_args)

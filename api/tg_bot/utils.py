@@ -185,6 +185,17 @@ Delete job:
     return result
 
 
+def get_detail_book_result(book_detail):
+    result = """
+🎉🎉🎉
+{id}
+
+Book Name: {title}
+Is public: {is_public}
+""".format(**book_detail["result"])
+    return result
+
+
 def get_url_info_result(info):
     if info["schema"] is not None:
         env_dict = info["schema"].get("properties", {})
@@ -251,6 +262,20 @@ def detail_job(token, job_id):
     return response_str
 
 
+def detail_book(token, book_id):
+    try:
+        result = EEBookClient(token).get_book_detail(book_id)
+        response_str = get_detail_book_result(result)
+    except ServiceException as s:
+        if s.code == "resource_not_exist":
+            response_str = "Ops, book not exist"
+        elif s.error_type == "unauthorized":
+            response_str = constants.TOKEN_EXPIRED_STRING
+        else:
+            response_str = "Something wrong, please contact @knarfeh"
+    return response_str
+
+
 def start_job(token, payload):
     try:
         EEBookClient(token).start_job(payload)
@@ -293,6 +318,7 @@ def delete_book(token, book_id):
             response_str = "Something wrong, please contact @knarfeh"
     LOGGER.info("Delete book %s, response str: %s", book_id, response_str)
     return response_str
+
 
 def get_url_info(payload):
     try:
