@@ -6,8 +6,8 @@ from __future__ import unicode_literals
 
 import logging
 import os
+import requests
 import telebot
-
 from telebot import types
 from telebot.util import extract_arguments
 
@@ -274,6 +274,35 @@ def detail_book(token, book_id):
         else:
             response_str = "Something wrong, please contact @knarfeh"
     return response_str
+
+def get_book_dl_url(token, book_id):
+    try:
+        result = EEBookClient(token).get_book_detail(book_id)
+        download_url = result["result"]["download_url"]
+        book_name = result["result"]["title"]
+        return download_url, book_name, True
+    except ServiceException as s:
+        if s.code == "resource_not_exist":
+            response_str = "Ops, book not exist"
+        elif s.error_type == "unauthorized":
+            response_str = constants.TOKEN_EXPIRED_STRING
+        else:
+            response_str = "Something wrong, please contact @knarfeh"
+        return response_str, "", False
+
+
+def download_send_book(url, chat_id, book_name):
+    r = requests.get(url)
+    LOGGER.info("download_send_book???url: {}, chat_id: {}, book_name: {}".format(url, chat_id, book_name))
+    with open("/tmp/{}".format(book_name), 'wb') as f:
+        for chunk in r.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+    doc = open('/tmp/{}'.format(book_name), 'rb')
+    bot.send_document(chat_id, doc)
+    os.remove('/tmp{}'.format(book_name))
+
+
 
 
 def start_job(token, payload):

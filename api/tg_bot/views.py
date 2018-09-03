@@ -9,7 +9,6 @@ import os
 import copy
 import telebot
 import hashlib
-import requests
 
 from flask import request, g, current_app
 from telebot import types
@@ -28,7 +27,7 @@ from ..common.exceptions import ServiceException
 from .utils import (pagination_edit_list_by_category, get_result_by_action_res, delete_config,
                     detail_config, start_job, delete_job,
                     detail_job, get_url_info, delete_book,
-                    detail_book
+                    detail_book, get_book_dl_url, download_send_book
 )
 
 bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN", None))
@@ -60,14 +59,7 @@ def send_book():
     # TODO: handle failed
     data = request.json.copy()
     LOGGER.info("Send book, data: {}".format(data))
-    r = requests.get(data["book_url"])
-    with open("/tmp/{}".format(data["book_name"]), 'wb') as f:
-        for chunk in r.iter_content(chunk_size=1024):
-            if chunk:
-                f.write(chunk)
-    doc = open('/tmp/{}'.format(data["book_name"]), 'rb')
-    bot.send_document(data["chat_id"], doc)
-    os.remove('/tmp{}'.format(data["book_name"]))
+    download_send_book(data["book_url"], data["chat_id"], data["book_name"])
     return {}
 
 
@@ -292,7 +284,8 @@ def get_resource(message):
             book_id = "-".join(args[1:])
             LOGGER.info("Get detail of book: %s", book_id)
             book_detail_result = detail_book(token, book_id)
-            books_result = "/detele_book_" + book_id.replace("-", "_")
+            books_result = "/delete_book_" + book_id.replace("-", "_")
+            books_result = books_result + "\n/dl_book_" + book_id.replace("-", "_")
         result = book_detail_result + "\n" + books_result
         LOGGER.info("Got detailed book result: {}, args: {}".format(result, args))
     elif args[0] == "":
@@ -409,10 +402,28 @@ def report_issue(message):
 @bot.message_handler(commands=["dl"])
 def download_book(message):
     """
-    /dl_book_id report url git repo, git issue
+    /dl_book_id
     """
-    # TODO
-    pass
+    submit_str = extract_arguments(message.text.strip())
+    args = submit_str.split(" ")
+    token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+    if args[0] == "book":
+        if len(args) == 1:
+            result = "Please specify book id"
+            bot.reply_to(message, result)
+        else:
+            book_id = "-".join(args[1:])
+            LOGGER.info("Get book %s to download", book_id)
+            url_or_res, book_name, success = get_book_dl_url(token, book_id)
+            LOGGER.info("url_or_res: {}, book_name: {}, success: {}".format(url_or_res, book_name, success))
+            if success:
+                download_send_book(url_or_res, message.chat.id, book_name)
+                return
+            bot.reply_to(message, url_or_res)
+
+    else:
+        result = "TODO: list all dl_book_id"
+        bot.reply_to(message, result)
 
 
 @bot.message_handler(commands=["search"])
@@ -461,20 +472,20 @@ def process_callback_button(call):
 
 @bot.message_handler(func=lambda message: True)
 def other_message(message):
-    LOGGER.info("Handle other message")
     new_message_json = message.json
     cmd_args = new_message_json["text"].split("_")
-    print("WTF is cmd_args???{}".format(cmd_args))
-    if cmd_args[0].startswith("/") and cmd_args[0] not in ["/list", "/detail", "/delete"]:
+    LOGGER.info("Handle other message, cmd_args: {}".format(cmd_args))
+    supported_cmd = ["/list", "/detail", "/delete", "/dl", "/run"]
+    if cmd_args[0].startswith("/") and cmd_args[0] not in supported_cmd:
         result = "Unsupported command"
         bot.reply_to(message, result)
         return
-    elif cmd_args[0].startswith("/") and cmd_args[0] in ["/list", "/detail", "/delete"]:
+    elif cmd_args[0].startswith("/") and cmd_args[0] in supported_cmd:
         new_message_json["text"] = " ".join(cmd_args)
         new_message = types.Message.de_json(new_message_json)
         bot.process_new_messages([new_message])
-    # else
-	# bot.reply_to(message, "search command???")
+    # else:
+	    # bot.reply_to(message, "TODO: search book command???")
 
 # admin command
 
