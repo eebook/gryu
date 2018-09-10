@@ -303,8 +303,6 @@ def download_send_book(url, chat_id, book_name):
     os.remove('/tmp{}'.format(book_name))
 
 
-
-
 def start_job(token, payload):
     try:
         EEBookClient(token).start_job(payload)

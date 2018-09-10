@@ -63,6 +63,10 @@ class UrlMetadataClient(object):
     def sync_repo_metadata(cls):
         return HlgdRequest.send('url_metadata/sync', method='PUT')['data']
 
+    @classmethod
+    def get_url_examples(cls):
+        return HlgdRequest.send('url_metadata/examples', method='GET')['data']
+
 
 class EEBookClient(object):
     def __init__(self, token):

@@ -31,11 +31,13 @@ from .utils import (pagination_edit_list_by_category, get_result_by_action_res, 
 )
 
 bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN", None))
-# bot.set_webhook(url=os.getenv("TG_WEBHOOK_URL", "https://gryuint.nujeh.com/tg_bot/webhook"))
+TG_WEBHOOK_URL = os.getenv("TG_WEBHOOK_URL", "https://gryuint.nujeh.com/tg_bot/webhook")
 TG_PASSWORD = os.getenv("TG_PASSWORD", "nopassword")
 USER_TOKEN_EXPIRED = os.getenv("USER_TOKEN_EXPIRED", "2147483647")
 # USER_TOKEN_EXPIRED = os.getenv("USER_TOKEN_EXPIRED", "3")
 LOGGER = logging.getLogger(__name__)
+
+bot.set_webhook(url=TG_WEBHOOK_URL)
 
 
 @tg_bot_bp.route('/webhook', methods=['POST'])
@@ -72,7 +74,7 @@ def send_welcome(message):
 @bot.message_handler(commands=["submit"])
 def submit_url(message):
     """
-    /submit http://baidu.com
+    /submit https://zhuanlan.zhihu.com/newsql
     """
     # http://wiki.jikexueyuan.com/project/explore-python/Standard-Modules/hashlib.html
     # TODO: only run once a day
@@ -374,6 +376,7 @@ def supported_url(message):
     # TODO
     LOGGER.info("Get supported url, message: {}".foramt(message))
     # bot.reply_to(message, "https://eebook.github.io/catalog/")
+
 
 @bot.message_handler(commands=["logs"])
 def job_logs(message):
