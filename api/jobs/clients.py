@@ -6,6 +6,7 @@ import logging
 import os
 from ..common.utils import DoRequest
 from ..common import GRYU_HEADERS
+from ..common.utils import Diagnoser
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,6 +27,14 @@ class VhfwRequest(DoRequest):
     target_source = os.getenv('VHFW_SOURCE', 18087)
 
 class JobClient(object):
+
+    @classmethod
+    def ping(cls):
+        response = CcccRequest.send('_ping', method='GET')
+        return {
+            'status': 'OK' if response['status_code'] == 200 else 'ERROR',
+            'message': response['data']
+        }
 
     @classmethod
     def list_job_configs(cls, uuids):
@@ -101,3 +110,5 @@ class JobClient(object):
         return VhfwRequest.send('logs/{}/'.format(job_uuid),
                                 method='GET',
                                 params=query_dict)['data']
+
+Diagnoser().add_check('cccc', JobClient.ping)

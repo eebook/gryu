@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import functools
 import logging
 import six
+import time
 
 import requests
 from requests.exceptions import ConnectionError, ConnectTimeout
@@ -15,12 +16,10 @@ from flask_httpauth import HTTPTokenAuth
 from werkzeug.routing import BaseConverter
 
 from .database import db
-
 from . import status
 
 
 DEFAULT_TIMEOUT_SECONDS = 30
-
 token_auth = HTTPTokenAuth('token')
 LOGGER = logging.getLogger(__name__)
 
@@ -271,3 +270,64 @@ class DoRequest(object):
             raise ServiceException(code, response.text, target_source)
         return result
 
+
+def singleton(cls):
+    obj = cls()
+    # Always return the same object
+    cls.__new__ = staticmethod(lambda cls: obj)
+    # Disable __init__
+    try:
+        del cls.__init__
+    except AttributeError:
+        pass
+    return cls
+
+@singleton
+class Diagnoser(object):
+    _subscriptions = []
+
+    def __init__(self):
+        self._subscriptions = []
+
+    def add(self, diagnose):
+        assert isinstance(diagnose, Check)
+        self._subscriptions.append(diagnose)
+
+    def add_check(self, name, check_function):
+        self.add(Check(name, check_function))
+
+    def check(self):
+        report = {'status': 'OK', 'details': []}
+        for d in self._subscriptions:
+            subreport = d.check()
+            if subreport['status'] != 'OK' and report['status'] == 'OK':
+                report['status'] = subreport['status']
+            report['details'].append(subreport)
+        return report
+
+
+class Check(object):
+    _name = ''
+    _function = None
+
+    def __init__(self, name, check_function):
+        assert name
+        self._name = name
+        self._function = check_function
+
+    def _current(self):
+        return int(time.time()*1000)
+
+    def check(self):
+        start = self._current()
+        try:
+            result = self._function()
+        except Exception as e:
+            result = {'status': 'ERROR', 'message': '{}'.format(e.message)}
+        assert isinstance(result, dict)
+        assert 'status' in result
+        result.update({
+            'name': self._name,
+            'latency': str(self._current() - start) + 'ms'
+        })
+        return result

@@ -31,13 +31,11 @@ from .utils import (pagination_edit_list_by_category, get_result_by_action_res, 
 )
 
 bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN", None))
-TG_WEBHOOK_URL = os.getenv("TG_WEBHOOK_URL", "https://gryuint.nujeh.com/tg_bot/webhook")
 TG_PASSWORD = os.getenv("TG_PASSWORD", "nopassword")
 USER_TOKEN_EXPIRED = os.getenv("USER_TOKEN_EXPIRED", "2147483647")
 # USER_TOKEN_EXPIRED = os.getenv("USER_TOKEN_EXPIRED", "3")
 LOGGER = logging.getLogger(__name__)
-
-bot.set_webhook(url=TG_WEBHOOK_URL)
+UNKNOWN_ERROR = "Something wrong, please contact @knarfeh"
 
 
 @tg_bot_bp.route('/webhook', methods=['POST'])
@@ -48,7 +46,10 @@ def bot_webhook():
         update = telebot.types.Update.de_json(json_string)
         bot.process_new_updates([update])
 
-        username = update.message.from_user.username
+        if update.message is not None:
+            username = str(update.message.from_user.id)
+        else:
+            username = str(update.callback_query.message.from_user.id)
         user, token = get_user(username)
         RedisCache().writer.set("eebook-gryu-"+user.username, token)
         RedisCache().writer.expire("eebook-gryu-"+user.username, USER_TOKEN_EXPIRED)
@@ -94,7 +95,7 @@ def submit_url(message):
             # TODO: recommend similar url
             response_str = "Url not supported"
         else:
-            response_str = "Something wrong, please contact @knarfeh"
+            response_str = UNKNOWN_ERROR
         bot.reply_to(message, response_str)
         return
 
@@ -103,34 +104,37 @@ def submit_url(message):
 
     if url_metadata["schema"] is not None:
         required_env_list = url_metadata["schema"].get("required", [])
+        properties = url_metadata["schema"].get("properties", {})
+        default_env_dict = [{"name": k, "value": v["default"]} for k, v in properties.items() if v.get("default", None)]
     else:
         required_env_list = list()
-    LOGGER.info("required_env_list: {}".format(required_env_list))
-
+        default_env_dict = dict()
     missed_env = [item for item in required_env_list if item not in submit_env_dict.keys()]
     if len(missed_env) > 0:
         bot.reply_to(message, ", ".join(missed_env) + " is required")
         return
-    config_name = hashlib.md5((submit_str+message.from_user.username+"-tg").encode('utf-8')).hexdigest()
+    config_name = hashlib.md5((submit_str+str(message.from_user.id)+"-tg").encode('utf-8')).hexdigest()
     envvars = [{"name": k, "value": v} for k, v in submit_env_dict.items()]
     envvars.append({"name": "URL", "value": args[0]})
     envvars.append({"name": "_CHAT_ID", "value": str(message.chat.id)})
     envvars.append({"name": "ES_INDEX", "value": url_metadata["name"]})
+    for item in default_env_dict:
+        envvars.append({"name": item["name"], "value": item["value"]})
     job_config_payload = {
         "config_name": config_name,
         "image_name": url_metadata["image"],
-        "created_by": message.from_user.username+"-tg",
+        "created_by": str(message.from_user.id)+"-tg",
         "envvars": envvars
     }
     LOGGER.info("Creating job config, payload: {}".format(job_config_payload))
-    token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+    token = RedisCache().writer.get("eebook-gryu-" + str(message.from_user.id) + "-tg")
     try:
         EEBookClient(token).create_job_config(job_config_payload)
     except ServiceException as e:
         if e.code == "job_config_name_conflict":
             response_str = "Already exist, please try\n /run {} \n，input /configs see existing job config".format(config_name)
         else:
-            response_str = "Something wrong, please contact @knarfeh"
+            response_str = UNKNOWN_ERROR
         LOGGER.info("Create job config, response string: {}".format(response_str))
         bot.reply_to(message, response_str)
         return
@@ -189,7 +193,7 @@ def list_resource(message):
         if int(page_total) >= 2:
             markup.add(
                 types.InlineKeyboardButton("1", callback_data="current_page:"),
-                types.InlineKeyboardButton(">>", callback_data="next:list_config-1")
+                types.InlineKeyboardButton("➡️", callback_data="next:list_config-1")
             )
         LOGGER.info("List config, result: {}".format(result))
     elif args[0] == "job" or args[0] == "jobs":
@@ -198,7 +202,7 @@ def list_resource(message):
         if int(page_total) >= 2:
             markup.add(
                 types.InlineKeyboardButton("1", callback_data="current_page:"),
-                types.InlineKeyboardButton(">>", callback_data="next:list_job-1")
+                types.InlineKeyboardButton("➡️", callback_data="next:list_job-1")
             )
         LOGGER.info("List jobs, result: {}".format(result))
     elif args[0] == "book" or args[0] == "books":
@@ -207,12 +211,12 @@ def list_resource(message):
         if int(page_total) >= 2:
             markup.add(
                 types.InlineKeyboardButton("1", callback_data="current_page:"),
-                types.InlineKeyboardButton(">>", callback_data="next:list_book-1")
+                types.InlineKeyboardButton("➡️", callback_data="next:list_book-1")
             )
         LOGGER.info("List books, result: {}".format(result))
     elif args[0] == "":
         LOGGER.info("/list")
-        result = "/list_config \n /list_job \n list_book \n"
+        result = "/list_config \n/list_job \n/list_book \n"
     else:
         result = "Unsupported resource"
     bot.reply_to(message, result, reply_markup=markup)
@@ -228,7 +232,7 @@ def get_resource(message):
     """
     submit_str = extract_arguments(message.text.strip())
     args = submit_str.split(" ")
-    token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+    token = RedisCache().writer.get("eebook-gryu-" + str(message.from_user.id) + "-tg")
     markup = types.InlineKeyboardMarkup()
 
     if args[0] == "config" or args[0] == "configs":
@@ -238,7 +242,7 @@ def get_resource(message):
             if int(page_total) >= 2:
                 markup.add(
                     types.InlineKeyboardButton("1", callback_data="current_page:"),
-                    types.InlineKeyboardButton(">>", callback_data="next:list_config-1")
+                    types.InlineKeyboardButton("➡️", callback_data="next:list_config-1")
                 )
         else:
             config_detail_result = detail_config(token, args[1])
@@ -249,7 +253,7 @@ def get_resource(message):
                 if int(page_total) != 0 and int(page_total) != 1:
                     markup.add(
                         types.InlineKeyboardButton("1", callback_data="current_page:"),
-                        types.InlineKeyboardButton(">>", callback_data="next:detail_config/{}-1".format(args[1]))
+                        types.InlineKeyboardButton("➡️", callback_data="next:detail_config/{}-1".format(args[1]))
                     )
                 LOGGER.info("List config {}, config_detail_result: {}".format(args[1], config_jobs_result))
                 LOGGER.info("List config {}, result: {}".format(args[1], config_jobs_result))
@@ -263,7 +267,7 @@ def get_resource(message):
             if int(page_total) >= 2:
                 markup.add(
                     types.InlineKeyboardButton("1", callback_data="current_page:"),
-                    types.InlineKeyboardButton(">>", callback_data="next:list_job-1")
+                    types.InlineKeyboardButton("➡️", callback_data="next:list_job-1")
                 )
         else:
             job_id = "-".join(args[1:])
@@ -280,7 +284,7 @@ def get_resource(message):
             if int(page_total) >= 2:
                 markup.add(
                     types.InlineKeyboardButton("1", callback_data="current_page:"),
-                    types.InlineKeyboardButton(">>", callback_data="next:list_book-1")
+                    types.InlineKeyboardButton("➡️", callback_data="next:list_book-1")
                 )
         else:
             book_id = "-".join(args[1:])
@@ -310,7 +314,7 @@ def delete_resource(message):
     args = submit_str.split(" ")
     if len(args) < 2:
         LOGGER.info("Please specify a name to delete")
-    token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+    token = RedisCache().writer.get("eebook-gryu-" + str(message.from_user.id)+ "-tg")
 
     if args[0] == "config":
         LOGGER.info("Delete config %s", args[1])
@@ -355,7 +359,7 @@ def run_job(message):
     args = submit_str.split(" ")
     if len(args) < 2:
         LOGGER.info("Please specify a name to run")
-    token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+    token = RedisCache().writer.get("eebook-gryu-" + str(message.from_user.id) + "-tg")
 
     if args[0] == "config":
         payload = {
@@ -409,7 +413,7 @@ def download_book(message):
     """
     submit_str = extract_arguments(message.text.strip())
     args = submit_str.split(" ")
-    token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+    token = RedisCache().writer.get("eebook-gryu-" + str(message.from_user.id) + "-tg")
     if args[0] == "book":
         if len(args) == 1:
             result = "Please specify book id"

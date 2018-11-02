@@ -15,6 +15,7 @@ from .common.utils import json, RegexConverter
 from .common.middleware import response
 from .common.exceptions import APIException
 from .common.database import db
+from .common.utils import Diagnoser
 
 # Import models so that they are registered with SQLAlchemy
 from api.users.models import Users, ActivationKeys, EncryptedTokens      # noqa
@@ -23,13 +24,16 @@ from api.resources.models import Resources  # noqa
 
 BP_NAME = 'root'
 root_bp = Blueprint(BP_NAME, __name__)
-logger = logging.getLogger(__name__)
 
 
-@root_bp.route("/ping", methods=["GET"])
+@root_bp.route("/_ping", methods=["GET"])
 def ping():
     return "pong"
 
+@root_bp.route("/_diagnose", methods=["GET"])
+def diagnose_api():
+    from .common import diagnose # noqa
+    return Diagnoser().check()
 
 def create_app(config_name='dev'):
     app = Flask(__name__)

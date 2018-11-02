@@ -142,7 +142,7 @@ def list_create_job_config():
         LOGGER.info('Get job config list')
         page = int(request.args.get('page', 1))
         page_size = int(request.args.get('page_size', current_app.config['PAGINATE_BY']))
-        pagination_obj = Resources.query.filter_by(created_by=username).paginate(page, page_size, error_out=True)
+        pagination_obj = Resources.query.filter_by(created_by=username, type="JOB_CONFIG").paginate(page, page_size, error_out=True)
         # TODO: pagination for jobclient
         uuids = [item.uuid for item in pagination_obj.items]
         result = JobClient.list_job_configs(uuids=uuids)

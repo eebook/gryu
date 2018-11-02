@@ -12,7 +12,7 @@ from ..common.database import BaseModel
 from ..common.serializers import ModelSerializerMixin
 
 RES_JOB_CONFIG = 'JOB_CONFIG'
-RES_BOOK = 'BOOK_BOOK'
+RES_BOOK = 'BOOK'
 __all__ = ['Resources']
 
 

@@ -40,14 +40,14 @@ def pagination_edit_list_by_category(call, operator, query):
     buttons = []
     if this_page > 1:
         buttons.append(
-            types.InlineKeyboardButton("<<", callback_data="prev:"+action+"_"+resource+"-"+str(this_page)),
+            types.InlineKeyboardButton("⬅️", callback_data="prev:"+action+"_"+resource+"-"+str(this_page)),
         )
     buttons.append(
         types.InlineKeyboardButton(str(this_page), callback_data="current_page"),
     )
     if this_page < int(page_total):
         buttons.append(
-            types.InlineKeyboardButton(">>", callback_data="next:"+action+"_"+resource+"-"+str(this_page)),
+            types.InlineKeyboardButton("➡️", callback_data="next:"+action+"_"+resource+"-"+str(this_page)),
         )
     markup = types.InlineKeyboardMarkup()
     markup.add(*buttons)
@@ -63,23 +63,23 @@ def pagination_edit_list_by_category(call, operator, query):
 def get_result_by_action_res(message, action, res, page, res_name=None, header=None):
     if action == "list":
         if res == "config":
-            token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+            token = RedisCache().writer.get("eebook-gryu-" + str(message.from_user.id) + "-tg")
             job_config_result = EEBookClient(token).get_job_config_list(DEFAULT_PAGE_SIZE, page)
             result = get_list_job_config_result(job_config_result, header)
             return result, job_config_result.get("page_total", 0)
         elif res == "job":
-            token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+            token = RedisCache().writer.get("eebook-gryu-" + str(message.from_user.id) + "-tg")
             jobs_result = EEBookClient(token).get_job_list(DEFAULT_PAGE_SIZE, page, res_name)
             result = get_list_job_result(jobs_result, _header=header)
             return result, jobs_result.get("page_total", 0)
         elif res == "book":
-            token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+            token = RedisCache().writer.get("eebook-gryu-" + str(message.from_user.id) + "-tg")
             books_result = EEBookClient(token).get_book_list(DEFAULT_PAGE_SIZE, page)
             result = get_list_book_result(books_result, header)
             return result, books_result.get("page_total", 0)
     elif action == "detail":
         if res == "config":
-            token = RedisCache().writer.get("eebook-gryu-" + message.from_user.username + "-tg")
+            token = RedisCache().writer.get("eebook-gryu-" + str(message.from_user.id) + "-tg")
             jobs_result = EEBookClient(token).get_job_list(DEFAULT_PAGE_SIZE, page, res_name)
             result = get_list_job_result(jobs_result, _header=header)
             return result, jobs_result.get("page_total", 0)
@@ -366,6 +366,6 @@ def mk_variable_str(detail_dict):
         if item["name"] == "URL":
             detail_dict["url"] = item["value"]
         else:
-            variable_str = variable_str + item["name"] + "=" + item["value"] + "\n"
+            variable_str = variable_str + str(item["name"]) + "=" + str(item["value"]) + "\n"
     detail_dict["variable_str"] = variable_str
     return detail_dict

@@ -4,8 +4,10 @@
 
 import logging
 import os
+import requests
 from ..utils import DoRequest
 from .. import GRYU_HEADERS
+from ..utils import Diagnoser
 
 LOGGER = logging.getLogger(__name__)
 
@@ -45,6 +47,18 @@ class GryuRequest(DoRequest):
     target_source = 18083
 
 
+class SearchClient(object):
+
+    @classmethod
+    def ping(cls):
+        response = VhfwRequest.send('_ping', method='GET')
+        return {
+            'status': 'OK' if response['status_code'] == 200 else 'ERROR',
+            'message': response['data']
+        }
+
+Diagnoser().add_check('vhfw', SearchClient.ping)
+
 class CourierClient(object):
 
     def email(self, _data):
@@ -52,6 +66,14 @@ class CourierClient(object):
 
 
 class UrlMetadataClient(object):
+
+    @classmethod
+    def ping(cls):
+        response = HlgdRequest.send('_ping', method='GET')
+        return {
+            'status': 'OK' if response['status_code'] == 200 else 'ERROR',
+            'message': response['data']
+        }
 
     @classmethod
     def get_url_metadata(cls, _data):
@@ -67,6 +89,7 @@ class UrlMetadataClient(object):
     def get_url_examples(cls):
         return HlgdRequest.send('url_metadata/examples', method='GET')['data']
 
+Diagnoser().add_check('hlgd', UrlMetadataClient.ping)
 
 class EEBookClient(object):
     def __init__(self, token):
