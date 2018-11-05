@@ -105,11 +105,12 @@ def submit_url(message):
     if url_metadata["schema"] is not None:
         required_env_list = url_metadata["schema"].get("required", [])
         properties = url_metadata["schema"].get("properties", {})
-        default_env_dict = [{"name": k, "value": v["default"]} for k, v in properties.items() if v.get("default", None)]
+        default_env_dict = [{"name": k, "value": v["default"]} for k, v in properties.items() if v.get("default", None) and k not in submit_env_dict.keys()]
     else:
         required_env_list = list()
         default_env_dict = dict()
     missed_env = [item for item in required_env_list if item not in submit_env_dict.keys()]
+    LOGGER.info('default_env_dict: {}'.format(default_env_dict))
     if len(missed_env) > 0:
         bot.reply_to(message, ", ".join(missed_env) + " is required")
         return
