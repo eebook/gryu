@@ -33,7 +33,7 @@ def pagination_edit_list_by_category(call, operator, query):
         this_page = int(current_page) + 1
     result, page_total = get_result_by_action_res(call, action, resource_type, this_page, resource_name)
     LOGGER.info("Total page: {}".format(page_total))
-    LOGGER.info("this_page: {}".format(this_page))
+    LOGGER.info("This page: {}".format(this_page))
 
     if (this_page<0) or (int(page_total) == 0):
         bot.answer_callback_query(callback_query_id=call.id, text='')
@@ -292,8 +292,11 @@ def get_book_dl_url(token, book_id):
 
 
 def download_send_book(url, chat_id, book_name):
+    LOGGER.info("Download url: {}, chat_id: {}, book_name: {}".format(url, chat_id, book_name))
+    if url == "" or book_name == "":
+        bot.send_message(chat_id, "Failed, please checkout logs")
+        return
     r = requests.get(url)
-    LOGGER.info("download_send_book???url: {}, chat_id: {}, book_name: {}".format(url, chat_id, book_name))
     with open("/tmp/{}".format(book_name), 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024):
             if chunk:
@@ -365,6 +368,8 @@ def mk_variable_str(detail_dict):
     for item in detail_dict["envvars"]:
         if item["name"] == "URL":
             detail_dict["url"] = item["value"]
+        elif item["name"].startswith("_") or item["name"] in ["ES_INDEX"]:
+            continue
         else:
             variable_str = variable_str + str(item["name"]) + "=" + str(item["value"]) + "\n"
     detail_dict["variable_str"] = variable_str

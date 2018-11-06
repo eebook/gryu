@@ -56,7 +56,7 @@ def bot_webhook():
         return {}
 
 
-@tg_bot_bp.route('/send_book', methods=['POST'])
+@tg_bot_bp.route('/job_result', methods=['POST'])
 @json
 def send_book():
     # TODO: handle failed
