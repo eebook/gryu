@@ -51,15 +51,14 @@ def bot_webhook():
         else:
             username = str(update.callback_query.message.from_user.id)
         user, token = get_user(username)
-        RedisCache().writer.set("eebook-gryu-"+user.username, token)
-        RedisCache().writer.expire("eebook-gryu-"+user.username, USER_TOKEN_EXPIRED)
+        RedisCache().writer.set("eebook:user:"+user.username, token)
+        RedisCache().writer.expire("eebook:user:"+user.username, USER_TOKEN_EXPIRED)
         return {}
 
 
 @tg_bot_bp.route('/job_result', methods=['POST'])
 @json
 def send_book():
-    # TODO: handle failed
     data = request.json.copy()
     LOGGER.info("Send book, data: {}".format(data))
     download_send_book(data["book_url"], data["chat_id"], data["book_name"])
@@ -84,7 +83,7 @@ def submit_url(message):
         bot.reply_to(message, "Please input an url, like /submit http://baidu.com")
         return
     args = submit_str.split(" ")
-    if len(args)%2 == 0:
+    if len(args) % 2 == 0:
         args.append(" ")
     url_metadata_payload = { "url": args[0] }
     try:
@@ -128,7 +127,7 @@ def submit_url(message):
         "envvars": envvars
     }
     LOGGER.info("Creating job config, payload: {}".format(job_config_payload))
-    token = RedisCache().writer.get("eebook-gryu-" + str(message.from_user.id) + "-tg")
+    token = RedisCache().writer.get("eebook:user:" + str(message.from_user.id) + "-tg")
     try:
         EEBookClient(token).create_job_config(job_config_payload)
     except ServiceException as e:
@@ -233,7 +232,7 @@ def get_resource(message):
     """
     submit_str = extract_arguments(message.text.strip())
     args = submit_str.split(" ")
-    token = RedisCache().writer.get("eebook-gryu-" + str(message.from_user.id) + "-tg")
+    token = RedisCache().writer.get("eebook:user:" + str(message.from_user.id) + "-tg")
     markup = types.InlineKeyboardMarkup()
 
     if args[0] == "config" or args[0] == "configs":
@@ -315,7 +314,7 @@ def delete_resource(message):
     args = submit_str.split(" ")
     if len(args) < 2:
         LOGGER.info("Please specify a name to delete")
-    token = RedisCache().writer.get("eebook-gryu-" + str(message.from_user.id)+ "-tg")
+    token = RedisCache().writer.get("eebook:user:" + str(message.from_user.id) + "-tg")
 
     if args[0] == "config":
         LOGGER.info("Delete config %s", args[1])
@@ -360,7 +359,7 @@ def run_job(message):
     args = submit_str.split(" ")
     if len(args) < 2:
         LOGGER.info("Please specify a name to run")
-    token = RedisCache().writer.get("eebook-gryu-" + str(message.from_user.id) + "-tg")
+    token = RedisCache().writer.get("eebook:user:" + str(message.from_user.id) + "-tg")
 
     if args[0] == "config":
         payload = {
@@ -414,7 +413,7 @@ def download_book(message):
     """
     submit_str = extract_arguments(message.text.strip())
     args = submit_str.split(" ")
-    token = RedisCache().writer.get("eebook-gryu-" + str(message.from_user.id) + "-tg")
+    token = RedisCache().writer.get("eebook:user:" + str(message.from_user.id) + "-tg")
     if args[0] == "book":
         if len(args) == 1:
             result = "Please specify book id"
@@ -468,6 +467,25 @@ def donate(message):
     pass
 
 
+# admin command
+@bot.message_handler(commands=["interval"])
+def user_interval(message):
+    username = message.from_user.username
+    LOGGER.info('username???{}'.format(username))
+    if username != os.getenv("TG_ADMIN", "knarfeh"):
+        bot.reply_to(message, "Sorry, you are not admin")
+        return
+    submit_str = extract_arguments(message.text.strip())
+    args = submit_str.split(" ")
+    if len(args) < 2:
+        bot.reply_to(message, "Not enough args")
+        return
+    key = "eebook:user_interval:" + str(args[0].strip()) + "-tg"
+    value = int(args[1], 10)
+    RedisCache().writer.set(key + "-tg", value)
+    bot.reply_to(message, "Set {}-tg intervals to {}".format(key, value))
+
+
 @bot.callback_query_handler(func=lambda call: True)
 def process_callback_button(call):
     operator, query = call.data.split(":")
@@ -483,7 +501,13 @@ def other_message(message):
     new_message_json = message.json
     cmd_args = new_message_json["text"].split("_")
     LOGGER.info("Handle other message, cmd_args: {}".format(cmd_args))
-    supported_cmd = ["/list", "/detail", "/delete", "/dl", "/run"]
+    supported_cmd = [
+        "/list",
+        "/detail",
+        "/delete",
+        "/dl",
+        "/run",
+    ]
     if cmd_args[0].startswith("/") and cmd_args[0] not in supported_cmd:
         result = "Unsupported command"
         bot.reply_to(message, result)
@@ -495,7 +519,6 @@ def other_message(message):
     # else:
 	    # bot.reply_to(message, "TODO: search book command???")
 
-# admin command
 
 # Utils
 def get_user(_username):
@@ -516,7 +539,7 @@ def get_user(_username):
         user = infra.create_user(user_dict)
         ActivationKeys.query.filter_by(user_id=user.id).first().delete()
         token = generate_api_token(user_dict, need_user_active=False)['token']
-        RedisCache().writer.set("eebook-gryu-"+username, token)
-        RedisCache().writer.expire("eebook-gryu-"+username, USER_TOKEN_EXPIRED)
+        RedisCache().writer.set("eebook:user:"+username, token)
+        RedisCache().writer.expire("eebook:user:"+username, USER_TOKEN_EXPIRED)
     token = EncryptedTokens.get_or_create(defaults=None, user_id=user.id)[0].key
     return user, token
