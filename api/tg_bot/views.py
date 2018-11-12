@@ -9,6 +9,8 @@ import os
 import copy
 import telebot
 import hashlib
+import time
+import dateutil.parser
 
 from flask import request, g, current_app
 from telebot import types
@@ -77,7 +79,17 @@ def submit_url(message):
     /submit https://zhuanlan.zhihu.com/newsql
     """
     # http://wiki.jikexueyuan.com/project/explore-python/Standard-Modules/hashlib.html
-    # TODO: only run once a day
+    key = "eebook:user_interval:" + str(message.from_user.id) + "-tg"
+    interval = RedisCache().writer.get(key)
+    last_job_time = RedisCache().writer.get("eebook:last_job_time:" + str(message.from_user.id) + "-tg")
+    if interval == None:
+        interval = 86400
+    if last_job_time == None:
+        last_job_time = -86400
+    if int(time.time()) - int(last_job_time) < int(interval):
+        bot.reply_to(message, "Already ran a job in the past 24 hours")
+        return
+
     submit_str = extract_arguments(message.text.strip())
     if submit_str == "":
         bot.reply_to(message, "Please input an url, like /submit http://baidu.com")
@@ -144,6 +156,9 @@ def submit_url(message):
     response_str = start_job(token, start_job_payload)
     LOGGER.info("Start a job, response string: %s", response_str)
     bot.reply_to(message, response_str)
+    if response_str == "Working on it":
+        LOGGER.debug("Setting last running job")
+    RedisCache().writer.set("eebook:last_job_time:" + str(message.from_user.id) + "-tg", int(time.time()))
     return
 
 
@@ -289,8 +304,10 @@ def get_resource(message):
         else:
             book_id = "-".join(args[1:])
             LOGGER.info("Get detail of book: %s", book_id)
-            book_detail_result = detail_book(token, book_id)
-            books_result = "/delete_book_" + book_id.replace("-", "_")
+            # book_detail_result = detail_book(token, book_id)
+            book_detail_result = None
+            # books_result = "/delete_book_" + book_id.replace("-", "_")
+            books_result = "None"
             books_result = books_result + "\n/dl_book_" + book_id.replace("-", "_")
         result = book_detail_result + "\n" + books_result
         LOGGER.info("Got detailed book result: {}, args: {}".format(result, args))
@@ -391,8 +408,32 @@ def job_logs(message):
     /logs 20                get 20 log of latest job
     /logs job_uuid 20       get 20 logs of a specific job
     """
-    # TODO
-    pass
+    bot.reply_to(message, "Getting logs of latest job")
+    token = RedisCache().writer.get("eebook:user:" + str(message.from_user.id) + "-tg")
+    jobs_result = EEBookClient(token).get_job_list(1, 1, None)
+    if not jobs_result.get("results", []):
+        bot.reply_to(message, "Sorry, you don't have any jobs")
+        return
+    results = jobs_result.get("results")
+    job_uuid = results[0]["job_uuid"]
+    started_at = results[0]["started_at"]
+    LOGGER.info("started_at: {}, job_uuid: {}".format(started_at, job_uuid))
+    start_time = int(time.mktime(dateutil.parser.parse(started_at).timetuple()))
+    end_time = int(start_time + 7200)
+    try:
+        logs = EEBookClient(token).get_job_logs(job_uuid, start_time, end_time, 1)
+    except Exception as e:
+        response_str = UNKNOWN_ERROR
+        bot.reply_to(message, response_str)
+        return
+    result = ""
+    for item in logs["results"]:
+        result = result + item["timestamp"] + ": " + item["log"]
+    with open("/tmp/{}.log".format(job_uuid), "w") as text_file:
+        text_file.write(result)
+    log_file = open("/tmp/{}.log".format(job_uuid), "rb")
+    bot.send_document(message.chat.id, log_file)
+    os.remove('/tmp/{}.log'.format(job_uuid))
 
 
 @bot.message_handler(commands=["report"])
@@ -471,7 +512,6 @@ def donate(message):
 @bot.message_handler(commands=["interval"])
 def user_interval(message):
     username = message.from_user.username
-    LOGGER.info('username???{}'.format(username))
     if username != os.getenv("TG_ADMIN", "knarfeh"):
         bot.reply_to(message, "Sorry, you are not admin")
         return
@@ -482,8 +522,18 @@ def user_interval(message):
         return
     key = "eebook:user_interval:" + str(args[0].strip()) + "-tg"
     value = int(args[1], 10)
-    RedisCache().writer.set(key + "-tg", value)
-    bot.reply_to(message, "Set {}-tg intervals to {}".format(key, value))
+    RedisCache().writer.set(key, value)
+    bot.reply_to(message, "Set {} intervals to {}".format(key, value))
+
+
+# admin command
+@bot.message_handler(commands=["list_all_interval"])
+def list_all_interval(message):
+    username = message.from_user.username
+    if username != os.getenv("TG_ADMIN", "knarfeh"):
+        bot.reply_to(message, "Sorry, you are not admin")
+        return
+    bot.reply_to(message, "list all interval")
 
 
 @bot.callback_query_handler(func=lambda call: True)

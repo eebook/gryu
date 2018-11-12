@@ -142,6 +142,11 @@ class EEBookClient(object):
         result = GryuRequest.send(query_str, method='GET', headers=self.headers)['data']
         return result
 
+    def get_job_logs(self, job_id, start_time, end_time, page):
+        query_str = 'jobs/{}/logs/?start_time={}&end_time={}&page={}'.format(job_id, start_time, end_time, page)
+        result = GryuRequest.send(query_str, method='GET', headers=self.headers)['data']
+        return result
+
     def get_book_list(self, page_size, page):
         query_str = "books/?page_size={}&page={}".format(page_size, page)
         result = GryuRequest.send(query_str, method='GET', headers=self.headers)['data']
