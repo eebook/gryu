@@ -440,7 +440,7 @@ def job_logs(message):
         bot.reply_to(message, response_str)
         return
     result = ""
-    for item in logs["results"]:
+    for item in sorted(logs["results"], key=lambda k: k["timestamp"]):
         result = result + item["timestamp"] + ": " + item["log"]
     with open("/tmp/{}.log".format(job_uuid), "w") as text_file:
         text_file.write(result)
