@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import logging
 import os
+import time
 import requests
 import telebot
 from telebot import types
@@ -17,6 +18,7 @@ from ..common.clients import EEBookClient, UrlMetadataClient
 from ..cache import RedisCache
 
 bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN", None))
+BETA_USER_COUNT = os.getenv("BETA_USER_COUNT", 20)
 DEFAULT_PAGE_SIZE = int(os.getenv("DEFAULT_PAGE_SIZE", 2))
 LOGGER = logging.getLogger(__name__)
 
@@ -89,9 +91,10 @@ def list_result(res_id, header, action_type, res_results):
     result2return = header
     for result in res_results["results"]:
         item = str(result[res_id])
-        line = item[:8] + " " + action_type + item.replace("-", "_") + "\n"
+        line = action_type + item.replace("-", "_") + "\n"
         result2return = result2return + line
     return result2return
+
 
 def get_list_book_result(books_result, _header=None):
     if not books_result.get("results", []):
@@ -294,7 +297,7 @@ def get_book_dl_url(token, book_id):
 def download_send_book(url, chat_id, book_name):
     LOGGER.info("Download url: {}, chat_id: {}, book_name: {}".format(url, chat_id, book_name))
     if url == "" or book_name == "":
-        bot.send_message(chat_id, "Failed, please checkout logs")
+        bot.send_message(chat_id, "生成电子书失败了，请使用 /logs 查阅日志")
         return
     r = requests.get(url)
     with open("/tmp/{}".format(book_name), 'wb') as f:
@@ -374,3 +377,25 @@ def mk_variable_str(detail_dict):
             variable_str = variable_str + str(item["name"]) + "=" + str(item["value"]) + "\n"
     detail_dict["variable_str"] = variable_str
     return detail_dict
+
+
+def check_interval(message, user_id):
+    key = "eebook:user_interval:" + str(user_id) + "-tg"
+    interval = RedisCache().writer.get(key)
+    last_job_time = RedisCache().writer.get("eebook:last_job_time:" + str(user_id) + "-tg")
+    if interval is None:
+        interval = 86400
+    if last_job_time is None:
+        last_job_time = -86400
+    if int(time.time()) - int(last_job_time) < int(interval):
+        bot.reply_to(message, "在过去的24小时内已经运行了一次，请第二天再生成 EPub 文件，如有疑问请询问 @knarfeh")
+        return False
+    return True
+
+
+def beta_user_check(user_id):
+    now_num = RedisCache().writer.scard("eebook:beta_user")
+    if int(now_num) < int(BETA_USER_COUNT):
+        RedisCache().writer.sadd("eebook:beta_user", user_id)
+        return True
+    return False

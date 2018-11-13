@@ -29,7 +29,8 @@ from ..common.exceptions import ServiceException
 from .utils import (pagination_edit_list_by_category, get_result_by_action_res, delete_config,
                     detail_config, start_job, delete_job,
                     detail_job, get_url_info, delete_book,
-                    detail_book, get_book_dl_url, download_send_book
+                    detail_book, get_book_dl_url, download_send_book,
+                    check_interval, beta_user_check
 )
 
 bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN", None))
@@ -69,8 +70,10 @@ def send_book():
 
 @bot.message_handler(commands=['help', 'start'])
 def send_welcome(message):
-    LOGGER.info("TODO: more friendly message")
-    bot.reply_to(message, "Hello there")
+    if not beta_user_check(message.from_user.id):
+        bot.reply_to(message, "内测人数已满")
+        return
+    bot.reply_to(message, "你好，内测人数未满，文档地址：TODO")
 
 
 @bot.message_handler(commands=["submit"])
@@ -79,20 +82,16 @@ def submit_url(message):
     /submit https://zhuanlan.zhihu.com/newsql
     """
     # http://wiki.jikexueyuan.com/project/explore-python/Standard-Modules/hashlib.html
-    key = "eebook:user_interval:" + str(message.from_user.id) + "-tg"
-    interval = RedisCache().writer.get(key)
-    last_job_time = RedisCache().writer.get("eebook:last_job_time:" + str(message.from_user.id) + "-tg")
-    if interval == None:
-        interval = 86400
-    if last_job_time == None:
-        last_job_time = -86400
-    if int(time.time()) - int(last_job_time) < int(interval):
-        bot.reply_to(message, "Already ran a job in the past 24 hours")
+    if not beta_user_check(message.from_user.id):
+        bot.reply_to(message, "内测人数已满")
+        return
+    if not check_interval(message, message.from_user.id):
+        LOGGER.info("User {} run again in 24 hours".format(message.from_user.id))
         return
 
     submit_str = extract_arguments(message.text.strip())
     if submit_str == "":
-        bot.reply_to(message, "Please input an url, like /submit http://baidu.com")
+        bot.reply_to(message, "请输入一个链接, 比如 /submit http://baidu.com")
         return
     args = submit_str.split(" ")
     if len(args) % 2 == 0:
@@ -104,7 +103,7 @@ def submit_url(message):
     except ServiceException as s:
         if s.code == "url_not_support":
             # TODO: recommend similar url
-            response_str = "Url not supported"
+            response_str = "Url 暂不支持"
         else:
             response_str = UNKNOWN_ERROR
         bot.reply_to(message, response_str)
@@ -144,7 +143,8 @@ def submit_url(message):
         EEBookClient(token).create_job_config(job_config_payload)
     except ServiceException as e:
         if e.code == "job_config_name_conflict":
-            response_str = "Already exist, please try\n /run {} \n，input /configs see existing job config".format(config_name)
+            response_str = "该提交已存在，请使用 /run_config_{} 运行\n，输入 /detail_config_{} 查看已经运行的提交".format(
+                config_name, config_name)
         else:
             response_str = UNKNOWN_ERROR
         LOGGER.info("Create job config, response string: {}".format(response_str))
@@ -156,7 +156,7 @@ def submit_url(message):
     response_str = start_job(token, start_job_payload)
     LOGGER.info("Start a job, response string: %s", response_str)
     bot.reply_to(message, response_str)
-    if response_str == "Working on it":
+    if response_str == "工作中...":
         LOGGER.debug("Setting last running job")
     RedisCache().writer.set("eebook:last_job_time:" + str(message.from_user.id) + "-tg", int(time.time()))
     return
@@ -170,7 +170,7 @@ def url_info(message):
     url = extract_arguments(message.text.strip())
     LOGGER.info("Get url info, url: %s", url)
     if url == "":
-        bot.reply_to(message, "Please input an url, like /url_info http://baidu.com")
+        bot.reply_to(message, "请输入一个 url, 比如 /url_info http://baidu.com")
         return
     data = { "url": url }
     response_str = get_url_info(data)
@@ -198,6 +198,9 @@ def list_resource(message):
     /list book
     /list books
     """
+    if not beta_user_check(message.from_user.id):
+        bot.reply_to(message, "内测人数已满")
+        return
     submit_str = extract_arguments(message.text.strip())
     args = submit_str.split(" ")
     markup = types.InlineKeyboardMarkup()
@@ -233,7 +236,7 @@ def list_resource(message):
         LOGGER.info("/list")
         result = "/list_config \n/list_job \n/list_book \n"
     else:
-        result = "Unsupported resource"
+        result = "输入了暂不支持的资源类型"
     bot.reply_to(message, result, reply_markup=markup)
 
 
@@ -245,6 +248,10 @@ def get_resource(message):
     /detail_job
     /detail_book
     """
+    if not beta_user_check(message.from_user.id):
+        bot.reply_to(message, "内测人数已满")
+        return
+
     submit_str = extract_arguments(message.text.strip())
     args = submit_str.split(" ")
     token = RedisCache().writer.get("eebook:user:" + str(message.from_user.id) + "-tg")
@@ -327,10 +334,13 @@ def delete_resource(message):
     /delete job
     /delete book
     """
+    if not beta_user_check(message.from_user.id):
+        bot.reply_to(message, "内测人数已满")
+        return
     submit_str = extract_arguments(message.text.strip())
     args = submit_str.split(" ")
     if len(args) < 2:
-        LOGGER.info("Please specify a name to delete")
+        LOGGER.info("请指定要删除的资源名称")
     token = RedisCache().writer.get("eebook:user:" + str(message.from_user.id) + "-tg")
 
     if args[0] == "config":
@@ -358,8 +368,8 @@ def update_resource(message):
     /edit config
     /edit book
     """
-    LOGGER.info("TODO")
-    # LOGGER.info("chat id???{}".format(message["chat"]))
+    LOGGER.info("TODO, edit")
+    bot.reply_to(message, "编辑已有的提交，WIP")
     return
 
 
@@ -370,12 +380,15 @@ def run_job(message):
     /run job_config or job_uuid
     /run_config_name
     """
+    if not check_interval(message, message.from_user.id):
+        LOGGER.info("User {} run again in 24 hours".format(message.from_user.id))
+        return
     submit_str = extract_arguments(message.text.strip())
     if submit_str == "":
         return
     args = submit_str.split(" ")
     if len(args) < 2:
-        LOGGER.info("Please specify a name to run")
+        LOGGER.info("请指定要运行的一次提交")
     token = RedisCache().writer.get("eebook:user:" + str(message.from_user.id) + "-tg")
 
     if args[0] == "config":
@@ -394,9 +407,9 @@ def supported_url(message):
     Need improvement
     /supported
     """
-    # TODO
+    # TODO: webpreview
     LOGGER.info("Get supported url, message: {}".foramt(message))
-    # bot.reply_to(message, "https://eebook.github.io/catalog/")
+    bot.reply_to(message, "https://eebook.github.io/catalog/")
 
 
 @bot.message_handler(commands=["logs"])
@@ -408,11 +421,11 @@ def job_logs(message):
     /logs 20                get 20 log of latest job
     /logs job_uuid 20       get 20 logs of a specific job
     """
-    bot.reply_to(message, "Getting logs of latest job")
+    bot.reply_to(message, "获取最近运行的提交的日志")
     token = RedisCache().writer.get("eebook:user:" + str(message.from_user.id) + "-tg")
     jobs_result = EEBookClient(token).get_job_list(1, 1, None)
     if not jobs_result.get("results", []):
-        bot.reply_to(message, "Sorry, you don't have any jobs")
+        bot.reply_to(message, "抱歉，您没有任何提交")
         return
     results = jobs_result.get("results")
     job_uuid = results[0]["job_uuid"]
@@ -457,7 +470,7 @@ def download_book(message):
     token = RedisCache().writer.get("eebook:user:" + str(message.from_user.id) + "-tg")
     if args[0] == "book":
         if len(args) == 1:
-            result = "Please specify book id"
+            result = "请指定 book id"
             bot.reply_to(message, result)
         else:
             book_id = "-".join(args[1:])
