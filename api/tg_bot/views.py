@@ -175,7 +175,7 @@ def url_info(message):
     data = { "url": url }
     response_str = get_url_info(data)
     LOGGER.info("Response string: %s", response_str)
-    bot.reply_to(message, response_str)
+    bot.reply_to(message, response_str, disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=["example", "examples"])
@@ -271,7 +271,7 @@ def get_resource(message):
             if config_detail_result == constants.TOKEN_EXPIRED_STRING:
                 result = config_detail_result
             else:
-                config_jobs_result, page_total = get_result_by_action_res(message, "detail", "config", 1, res_name=args[1], header="Jobs of {}:\n".format(args[1]))
+                config_jobs_result, page_total = get_result_by_action_res(message, "detail", "config", 1, res_name=args[1], header="{} 的 jobs:\n".format(args[1]))
                 if int(page_total) != 0 and int(page_total) != 1:
                     markup.add(
                         types.InlineKeyboardButton("1", callback_data="current_page:"),
@@ -295,8 +295,9 @@ def get_resource(message):
             job_id = "-".join(args[1:])
             LOGGER.info("Get detail of job %s", job_id)
             job_detail_result = detail_job(token, job_id)
-            jobs_result = "/delete_job_" + job_id.replace("-", "_")
-        result = job_detail_result + "\n" + jobs_result
+            # jobs_result = "/delete_job_" + job_id.replace("-", "_")
+        # result = job_detail_result + "\n" + jobs_result
+        result = job_detail_result
         LOGGER.debug("Got detailed job result: {}, args: {}".format(result, args))
     elif args[0] == "book" or args[0] == "books":
         if len(args) == 1:
@@ -322,8 +323,7 @@ def get_resource(message):
         result = "/detail_config \n /detail_job \n /detail_book"
     else:
         print("TODO")
-        pass
-    bot.reply_to(message, result, reply_markup=markup)
+    bot.reply_to(message, result, reply_markup=markup, disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=["delete"])

@@ -99,12 +99,12 @@ def list_result(res_id, header, action_type, res_results):
 def get_list_book_result(books_result, _header=None):
     if not books_result.get("results", []):
         header = """
-Sorry, you don't have any books.
+抱歉，您没有任何图书。
 """
     else:
         header = """
 🎉🎉🎉
-Your books:
+您的图书:
 
 """
     if _header:
@@ -115,12 +115,12 @@ Your books:
 def get_list_job_result(jobs_result, _header=None):
     if not jobs_result.get("results", []):
         header = """
-Sorry, you don't have any jobs.
+抱歉，您还没有任何 job
 """
     else:
         header = """
 🎉🎉🎉
-Your jobs:
+您的 jobs:
 
 """
     if _header:
@@ -132,12 +132,12 @@ Your jobs:
 def get_list_job_config_result(job_configs, _header=None):
     if not job_configs.get("results", []):
         header = """
-Sorry, you don't have any job config.
+抱歉，您还没有进行过提交
 """
     else:
         header = """
 🎉🎉🎉
-Your job configs:
+您提交的配置：
 
 """
     if _header:
@@ -150,18 +150,19 @@ Your job configs:
 def get_detail_job_config_result(config_detail):
     new_config_detail = mk_variable_str(config_detail)
     result = """
-🎉🎉🎉
+您的配置：
 {config_name}
 
-Created at: {created_at}
-Image: {image_name}:{image_tag}
+创建时间: {created_at}
+镜像: {image_name}:{image_tag}
 URL: {url}
-Variables:
+变量:
+
 {variable_str}
 
-Run job with config:
+运行该配置:
   /run_config_{config_name}
-Delete job config:
+删除该配置:
   /delete_config_{config_name}
 """.format(**new_config_detail)
     return result
@@ -170,19 +171,21 @@ Delete job config:
 def get_detail_job_result(job_detail):
     LOGGER.info("job detail: {}".format(job_detail))
     new_job_detail = mk_variable_str(job_detail)
+    new_job_detail["job_uuid"] = new_job_detail["job_uuid"].replace("-", "_")
     result = """
-🎉🎉🎉
+job:
 {job_uuid}
 
-Config Name: {config_name}
-Image: {image_name}:{image_tag}
+配置名称: {config_name}
+镜像: {image_name}:{image_tag}
 URL: {url}
-Variables:
+变量:
+
 {variable_str}
 
-Get config detail:
+获取配置细节:
   /detail_config_{config_name}
-Delete job:
+删除 job:
   /delete_job_{job_uuid}
 """.format(**new_job_detail)
     return result
@@ -193,8 +196,8 @@ def get_detail_book_result(book_detail):
 🎉🎉🎉
 {id}
 
-Book Name: {title}
-Is public: {is_public}
+图书名称: {title}
+是否公开: {is_public}
 """.format(**book_detail["result"])
     return result
 
@@ -211,11 +214,11 @@ def get_url_info_result(info):
         variable_str = variable_str + key + " " + str(default) + "\n"
     result = """
 🎉🎉🎉
-Yes, you can submit this url
+您可以提交这个 url
 
-Name: {}
-Description: {}
-Repository: {}
+名称: {}
+描述: {}
+仓库: {}
     """.format(info["name"], info["info"], info["repo"], variable_str)
     if variable_str != "\n":
         result = result + "\nVariables:\n{}".format(variable_str)
@@ -348,7 +351,7 @@ def delete_book(token, book_id):
         elif s.error_type == "unauthorized":
             response_str = "Hello there, Long time no see."
         else:
-            response_str = "Something wrong, please contact @knarfeh"
+            response_str = "出了一些错误, 请联系 @knarfeh"
     LOGGER.info("Delete book %s, response str: %s", book_id, response_str)
     return response_str
 
@@ -362,7 +365,7 @@ def get_url_info(payload):
             # TODO: recommend similar url
             response_str = "Url not supported"
         else:
-            response_str = "Something wrong, please contact @knarfeh"
+            response_str = "出了一些错误, 请联系 @knarfeh"
     return response_str
 
 
