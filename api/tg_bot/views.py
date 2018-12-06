@@ -73,7 +73,7 @@ def send_welcome(message):
     if not beta_user_check(message.from_user.id):
         bot.reply_to(message, "内测人数已满")
         return
-    bot.reply_to(message, "你好，内测人数未满，文档地址：TODO")
+    bot.reply_to(message, "你好，内测人数未满，文档地址：https://eebook.nujeh.com")
 
 
 @bot.message_handler(commands=["submit"])
