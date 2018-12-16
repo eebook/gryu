@@ -129,6 +129,7 @@ def submit_url(message):
     envvars.append({"name": "URL", "value": args[0]})
     envvars.append({"name": "_CHAT_ID", "value": str(message.chat.id)})
     envvars.append({"name": "ES_INDEX", "value": url_metadata["name"]})
+    envvars.append({"name": "CREATED_BY", "value": str(message.from_user.id)+"-tg"})
     for item in default_env_dict:
         envvars.append({"name": item["name"], "value": item["value"]})
     job_config_payload = {

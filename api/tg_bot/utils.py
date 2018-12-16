@@ -374,7 +374,7 @@ def mk_variable_str(detail_dict):
     for item in detail_dict["envvars"]:
         if item["name"] == "URL":
             detail_dict["url"] = item["value"]
-        elif item["name"].startswith("_") or item["name"] in ["ES_INDEX"]:
+        elif item["name"].startswith("_") or item["name"] in ["ES_INDEX", "CREATED_BY"]:
             continue
         else:
             variable_str = variable_str + str(item["name"]) + "=" + str(item["value"]) + "\n"

@@ -170,7 +170,9 @@ def verify_token(token):
     if instance:
         user = instance.users
         g.user = user
+        LOGGER.info("user???{}".format(user))
         return True
+    LOGGER.info("no instance...")
     return False
 
 
