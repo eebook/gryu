@@ -401,4 +401,6 @@ def beta_user_check(user_id):
     if int(now_num) < int(BETA_USER_COUNT):
         RedisCache().writer.sadd("eebook:beta_user", user_id)
         return True
+    elif RedisCache().writer.sismember("eebook:beta_user", user_id):
+        return True
     return False
